@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SimulationEngine implements IEngine, Runnable{
+    // TODO all class
     private List<MoveDirection> directions;
     private IWorldMap map;
     private List<Animal> animals;
@@ -24,7 +25,7 @@ public class SimulationEngine implements IEngine, Runnable{
         if (positions.length > 0)
             for (Vector2d position: positions)
             {
-                Animal zwierzomtko = new Animal(map, position);
+                Animal zwierzomtko = new Animal(map, position, 5);
                 this.map.place(zwierzomtko);
                 this.animals.add(zwierzomtko);
             }
@@ -41,7 +42,7 @@ public class SimulationEngine implements IEngine, Runnable{
     {
         int n = this.animals.size();
 
-        this.animals.get(i % n).move(this.directions.get(i));
+        this.animals.get(i % n).move(directions.get(i));
 
         app.grid.setGridLinesVisible(false);
         app.grid.getChildren().clear();

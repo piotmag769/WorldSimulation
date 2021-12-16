@@ -18,4 +18,10 @@ public abstract class AbstractWorldMapElement implements IMapElement{
     {
         this.position = position;
     }
+
+    @Override
+    public String toString()
+    {
+        return this.orientation.toString();
+    }
 }

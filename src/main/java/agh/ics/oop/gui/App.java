@@ -28,14 +28,17 @@ public class App extends Application{
     private SimulationEngine engine;
     public GridPane grid;
     public Stage primaryStage;
+    public int energyLoss;
 
+
+    //TODO all class
     @Override
     public void init() throws Exception
     {
         try
         {
             ArrayList<MoveDirection> directions = OptionsParser.parse(getParameters().getRaw());
-            GrassField map = new GrassField(10);
+            GrassFieldBounded map = new GrassFieldBounded(3, 5, 0.5);
             Vector2d[] positions = {new Vector2d(4, 4), new Vector2d(7, 7)};
 
             this.engine = new SimulationEngine(directions, map, positions);
@@ -59,6 +62,8 @@ public class App extends Application{
 
     @Override
     public void start(Stage primaryStage) throws InterruptedException {
+        // get data from user
+
         //gui part
         this.primaryStage = primaryStage;
 

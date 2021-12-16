@@ -5,7 +5,6 @@ public enum MapDirection {
     SOUTH,
     EAST,
     WEST,
-    //comment those below to make tests work again
     NORTH_EAST,
     SOUTH_EAST,
     SOUTH_WEST,
@@ -24,19 +23,9 @@ public enum MapDirection {
             case SOUTH_EAST -> "SE";
             case SOUTH_WEST -> "SW";
             case NORTH_WEST -> "NW";
-            default -> "grass";
+            default -> "*";
         };
     }
-
-//    public MapDirection next()
-//    {
-//        return switch (this) {
-//            case NORTH -> EAST;
-//            case SOUTH -> WEST;
-//            case EAST -> SOUTH;
-//            case WEST -> NORTH;
-//        };
-//    }
 
     public MapDirection next()
     {
@@ -52,16 +41,6 @@ public enum MapDirection {
             default -> GRASS;
         };
     }
-
-//    public MapDirection previous()
-//    {
-//        return switch (this) {
-//            case NORTH -> WEST;
-//            case SOUTH -> EAST;
-//            case EAST -> NORTH;
-//            case WEST -> SOUTH;
-//        };
-//    }
 
     public MapDirection previous()
     {

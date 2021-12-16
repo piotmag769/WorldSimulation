@@ -8,12 +8,6 @@ public class Grass extends AbstractWorldMapElement{
         this.orientation = MapDirection.GRASS;
     }
 
-    @Override
-    public String toString()
-    {
-        return "*";
-    }
-
     public static String getImagePath()
     {
         return "/grass.jpg";

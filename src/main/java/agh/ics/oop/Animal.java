@@ -5,16 +5,15 @@ import java.util.*;
 public class Animal extends AbstractWorldMapElement{
     private IWorldMap map;
     private List<IPositionChangeObserver> observers= new ArrayList<>();
-    /*private*/ public int energy;
-    private static int energyLoss;
+    private int energy;
     private final int[] genotype;
 
-    // constructor related to first animals or magical event animals
+    // constructor related to first animals
     public Animal(IWorldMap map, Vector2d position, int StartEnergy)
     {
         Random random = new Random();
         MapDirection[] temp = MapDirection.values();
-        this.orientation = temp[random.ints(1, 0, temp.length - 1).toArray()[0]]; // without grass
+        this.orientation = temp[random.nextInt(temp.length - 1)]; // without grass
         this.map = map;
         this.position = position;
         this.genotype = Arrays.stream(random.ints(32, 0, 8).toArray()).sorted().toArray();
@@ -22,24 +21,37 @@ public class Animal extends AbstractWorldMapElement{
         this.energy = StartEnergy;
     }
 
+    // constructor related to magical event animals
+    public Animal(Animal animal)
+    {
+        this.orientation = animal.orientation;
+        this.map = animal.map; // class - passed by reference, but we want to get the reference, not new instance of obj
+        this.position = new Vector2d(animal.position.x, animal.position.y); // class - passed by reference
+        this.genotype = Arrays.copyOf(animal.genotype, animal.genotype.length); // array - passed by reference
+        this.energy = animal.energy; // primitive type - passed by value
+    }
+
+    // constructor related to procreation
     public Animal(IWorldMap map, Animal parent1, Animal parent2)
     {
         Random random = new Random();
         MapDirection[] temp = MapDirection.values();
-        this.orientation = temp[random.ints(1, 0, temp.length - 1).toArray()[0]];
+        this.orientation = temp[random.nextInt(temp.length - 1)];
         this.map = map;
         this.position = parent1.position;
+
         // using energy to give a birth to a baby
         int E1 = parent1.energy/4;
         int E2 = parent2.energy/4;
         parent1.energy -= E1;
         parent2.energy -= E2;
         this.energy = (E1 + E2) / 4;
-        //
 
         int side = (random.nextInt() % 2); // side we cut dom genotype from -> 0 - left, 1 - right
 
         // procreation
+
+        // choosing dominant animal
         Animal dom = parent2, sub = parent1;
         if (parent1.energy > parent2.energy)
         {
@@ -47,10 +59,13 @@ public class Animal extends AbstractWorldMapElement{
             sub = parent2;
         }
 
+        // calculating cut place
         int cut_place = dom.energy/(dom.energy + sub.energy) * 32;
 
+        // genotype of length 32
         int[] first, second;
-        //genotype of length 32
+
+        // getting parts of genotypes to join
         if (side == 0)
         {
             first = Arrays.copyOfRange(dom.genotype, 0, cut_place);
@@ -62,6 +77,7 @@ public class Animal extends AbstractWorldMapElement{
             second = Arrays.copyOfRange(dom.genotype, 32 - cut_place, 32);
         }
 
+        // joining genotypes and sorting result
         int[] res = Arrays.copyOf(first, first.length + second.length);
         System.arraycopy(second, 0, res, first.length, second.length);
         Arrays.sort(res);
@@ -73,12 +89,19 @@ public class Animal extends AbstractWorldMapElement{
         return position.equals(this.position);
     }
 
-    //TODO move
     public void move(MoveDirection direction)
     {
         switch (direction) {
             case FORWARD -> {
                 Vector2d newPosition = this.position.add(this.orientation.toUnitVector());
+                // if all moves are allowed on this map - for unbounded grass field
+                if(this.map instanceof GrassFieldUnbounded)
+                {
+                    newPosition = correctPositionForUnboundedMap(newPosition);
+                    if (!this.map.canMoveTo(position))
+                        throw new RuntimeException("move to " + newPosition + "not allowed on unbounded map - check your code");
+                }
+
                 if (this.map.canMoveTo(newPosition))
                 {
                     this.positionChanged(this.position, newPosition);
@@ -87,6 +110,14 @@ public class Animal extends AbstractWorldMapElement{
             }
             case BACKWARD -> {
                 Vector2d newPosition = this.position.subtract(this.orientation.toUnitVector());
+
+                if(this.map instanceof GrassFieldUnbounded)
+                {
+                    newPosition = correctPositionForUnboundedMap(newPosition);
+                    if (!this.map.canMoveTo(position))
+                        throw new RuntimeException("move to " + newPosition + "not allowed on unbounded map - check your code");
+                }
+
                 if (this.map.canMoveTo(newPosition))
                 {
                     this.positionChanged(this.position, newPosition);
@@ -96,6 +127,16 @@ public class Animal extends AbstractWorldMapElement{
             case RIGHT -> this.orientation = this.orientation.next();
             case LEFT -> this.orientation = this.orientation.previous();
         }
+    }
+
+    private Vector2d correctPositionForUnboundedMap(Vector2d newPosition)
+    {
+        int width = this.map.getUpperCorner().x - this.map.getLowerCorner().x + 1;
+        int height =  this.map.getUpperCorner().y - this.map.getLowerCorner().y + 1;
+        int x = (newPosition.x < this.map.getLowerCorner().x) ? newPosition.x + width: newPosition.x % width;
+        int y = (newPosition.y < this.map.getLowerCorner().y) ? newPosition.y + height: newPosition.y % height;
+
+        return new Vector2d(x, y);
     }
 
     public void addObserver(IPositionChangeObserver observer)
@@ -114,23 +155,23 @@ public class Animal extends AbstractWorldMapElement{
             observer.positionChanged(this, oldPosition, newPosition);
     }
 
-    public int chooseGen()
+    public int chooseGene()
     {
         return this.genotype[new Random().ints(1, 0, this.genotype.length).toArray()[0]];
     }
 
-    public void loseEnergy()
+    public void loseEnergy(int energyLoss)
     {
         this.energy -= energyLoss; // daily energy decrease
-    }
-
-    public void setEnergyLoss(int energyLoss)
-    {
-        Animal.energyLoss = energyLoss;
     }
 
     public int getEnergy()
     {
         return energy;
+    }
+
+    public void gainEnergy(int energyGain)
+    {
+        this.energy += energyGain;
     }
 }

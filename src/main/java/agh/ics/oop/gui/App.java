@@ -38,7 +38,7 @@ public class App extends Application{
         try
         {
             ArrayList<MoveDirection> directions = OptionsParser.parse(getParameters().getRaw());
-            GrassFieldBounded map = new GrassFieldBounded(3, 5, 0.5);
+            GrassFieldBounded map = new GrassFieldBounded(3, 5, 0.5, 1, 2, 8);
             Vector2d[] positions = {new Vector2d(4, 4), new Vector2d(7, 7)};
 
             this.engine = new SimulationEngine(directions, map, positions);
@@ -46,8 +46,8 @@ public class App extends Application{
             this.map = map;
 
             // temporary fields to simplify the code
-            this.lower_corner = map.get_lower_corner();
-            this.upper_corner = map.get_upper_corner();
+            this.lower_corner = map.getLowerCorner();
+            this.upper_corner = map.getUpperCorner();
 
             this.x_len = upper_corner.x - lower_corner.x + 1;
             this.y_len = upper_corner.y - lower_corner.y + 1;

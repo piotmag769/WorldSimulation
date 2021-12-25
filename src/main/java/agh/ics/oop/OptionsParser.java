@@ -15,7 +15,7 @@ public class OptionsParser {
                 case "r", "right" -> animal_moves.add(MoveDirection.RIGHT);
                 case "l", "left" -> animal_moves.add(MoveDirection.LEFT);
                 default -> throw new IllegalArgumentException(move + " is not legal move specification");
-            };
+            }
         }
 
         return animal_moves;

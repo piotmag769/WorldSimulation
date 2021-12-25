@@ -1,7 +1,6 @@
 package agh.ics.oop;
 
 import agh.ics.oop.gui.App;
-import javafx.scene.layout.GridPane;
 
 /**
  * The interface responsible for managing the moves of the animals.

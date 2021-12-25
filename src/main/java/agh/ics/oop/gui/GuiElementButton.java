@@ -1,7 +1,6 @@
 package agh.ics.oop.gui;
 
 import agh.ics.oop.*;
-import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;

@@ -6,12 +6,13 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,24 +25,31 @@ public class App extends Application{
     private int y_len;
 
     private IWorldMap map;
-    private int moveDelay = 1000;
-    private SimulationEngine engine;
+    private final int moveDelay = 1000;
+    private SimulationEngineForTests engine;
     public GridPane grid;
-    public Stage primaryStage;
+
+
+    public int width;
+    public int height;
+    public double jungleRatio;
+    public int startEnergy;
     public int energyLoss;
+    public int plantEnergy;
+    public int animalsAtStart; // (>= 10)
 
 
     //TODO all class
     @Override
-    public void init() throws Exception
+    public void init()
     {
         try
         {
             ArrayList<MoveDirection> directions = OptionsParser.parse(getParameters().getRaw());
-            GrassFieldBounded map = new GrassFieldBounded(3, 5, 0.5, 1, 2, 8);
+            GrassField map = new GrassField(3, 5, 0.5, 1, 2, 8, true);
             Vector2d[] positions = {new Vector2d(4, 4), new Vector2d(7, 7)};
 
-            this.engine = new SimulationEngine(directions, map, positions);
+            this.engine = new SimulationEngineForTests(directions, map, positions);
             this.engine.setApp(this);
             this.map = map;
 
@@ -61,46 +69,27 @@ public class App extends Application{
     }
 
     @Override
-    public void start(Stage primaryStage) throws InterruptedException {
+    public void start(Stage primaryStage) {
         // get data from user
+        getParametersFromUser(primaryStage);
 
         //gui part
-        this.primaryStage = primaryStage;
-
-        this.grid = new GridPane();
-
-        grid.setGridLinesVisible(true);
-
-        this.create_and_add_axis_labels(grid);
-
-        this.create_and_add_elements(grid);
-
-        this.set_col_row_sizes(grid);
-
-        Scene scene = new Scene(grid, 500, 500);
-
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-//        Thread engineThread = new Thread(new Runnable(){
-//            @Override
-//            public void run()
-//            {
-//                for(int i = 0; i < engine.getDirectionLength(); i++)
-//                {
-//                    try {
-//                        Thread.sleep(moveDelay);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                    Platform.runLater(engine);
-//                }
-//            }
-//        }
-//        );
+//        this.primaryStage = primaryStage;
 //
-//        engineThread.setDaemon(true);
-//        engineThread.start();
+//        this.grid = new GridPane();
+//
+//        grid.setGridLinesVisible(true);
+//
+//        this.create_and_add_axis_labels(grid);
+//
+//        this.create_and_add_elements(grid);
+//
+//        this.set_col_row_sizes(grid);
+//
+//        Scene scene = new Scene(grid, 500, 500);
+//
+//        primaryStage.setScene(scene);
+//        primaryStage.show();
     }
 
     public void create_and_add_axis_labels(GridPane grid)
@@ -152,39 +141,31 @@ public class App extends Application{
         GridPane.setHalignment(btnStart, HPos.CENTER);
         grid.add(btnStart, 0, y_len + 1);
 
-        btnStart.setOnAction(new EventHandler<javafx.event.ActionEvent>()
-            {
-                @Override public void handle (ActionEvent e)
-                {
-                    try {
-                        String[] args = textField.getText().split(" ");
-                        engine.setDirections(OptionsParser.parse(List.of(args)));
-                        Thread engineThread = new Thread(new Runnable(){
-                            @Override
-                            public void run()
-                            {
-                                for(int i = 0; i < engine.getDirectionLength(); i++)
-                                {
-                                    try {
-                                        Thread.sleep(moveDelay);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                    Platform.runLater(engine);
-                                }
-                            }
-                        }
-                        );
-
-                        engineThread.setDaemon(true);
-                        engineThread.start();
-                    }
-                    catch(IllegalArgumentException exception)
+        btnStart.setOnAction(e -> {
+            try {
+                String[] args = textField.getText().split(" ");
+                engine.setDirections(OptionsParser.parse(List.of(args)));
+                Thread engineThread = new Thread(() -> {
+                    for(int i = 0; i < engine.getDirectionLength(); i++)
                     {
-                        System.out.println(exception.getMessage());
+                        try {
+                            Thread.sleep(moveDelay);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                        Platform.runLater(engine);
                     }
                 }
+                );
+
+                engineThread.setDaemon(true);
+                engineThread.start();
             }
+            catch(IllegalArgumentException exception)
+            {
+                System.out.println(exception.getMessage());
+            }
+        }
         );
 
     }
@@ -209,5 +190,88 @@ public class App extends Application{
             grid.getRowConstraints().add(row1);
 
         }
+    }
+
+    public void getParametersFromUser(Stage primaryStage)
+    {
+        Scene scene = new Scene(createArgumentGetter(), 500, 580);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Map project");
+        primaryStage.show();
+    }
+
+    public VBox createArgumentGetter()
+    {
+        VBox vbox = new VBox();
+        vbox.setSpacing(10);
+        vbox.setAlignment(Pos.BASELINE_CENTER);
+
+        // to simplify the code
+        Slider[] sliders = new Slider[7];
+
+        int[][] numericParameters = {
+                {5, 25, 15, 5}, // width
+                {5, 25, 15, 5}, // height
+                {0, 100, 71, 10}, // jungleRatio
+                {0, 100, 100, 10}, // startEnergy
+                {0, 100, 3, 10}, // energyLoss
+                {0, 100, 100, 10}, // plantEnergy
+                {10, 100, 30, 10} // animalsAtStart
+        };
+
+        String[] stringParameters = {
+                "Width",
+                "Height",
+                "Jungle Ratio (percentage)",
+                "Start Energy",
+                "Energy Loss",
+                "Plant Energy",
+                "Animals At Start"
+        };
+
+        for(int i = 0; i < numericParameters.length; i++)
+            addLabelAndSlider(sliders, i, vbox, numericParameters[i][0], numericParameters[i][1], numericParameters[i][2], numericParameters[i][3], stringParameters[i]);
+
+        addAcceptButton(vbox, sliders);
+
+        return vbox;
+    }
+    // adding label and slider to the vbox and the sliders table
+    private void addLabelAndSlider(Slider[] sliders, int index, VBox vbox, int min, int max, int value, int majorTickUnit, String title)
+    {
+        Label label = new Label(title);
+
+        Slider slider = new Slider(min, max, value);
+
+        slider.setAccessibleText(title);
+        slider.setMajorTickUnit(majorTickUnit);
+        slider.setMinorTickCount(majorTickUnit - 1);
+        slider.setShowTickMarks(true);
+        slider.setSnapToTicks(true);
+        slider.setShowTickLabels(true);
+
+        sliders[index] = slider;
+
+        VBox.setMargin(slider, new Insets(0, 10, 0, 10));
+
+        vbox.getChildren().add(label);
+        vbox.getChildren().add(slider);
+    }
+
+    // adding button (getting values from sliders on action) to the vbox
+    private void addAcceptButton(VBox vbox, Slider[] sliders)
+    {
+        Button button = new Button("Accept parameters");
+        button.setOnAction(e -> {
+            this.width = (int) sliders[0].getValue();
+            this.height = (int) sliders[1].getValue();
+            this.jungleRatio = sliders[2].getValue() / 100;
+            this.startEnergy = (int) sliders[3].getValue();
+            this.energyLoss = (int) sliders[4].getValue();
+            this.plantEnergy = (int) sliders[5].getValue();
+            this.animalsAtStart = (int) sliders[6].getValue();
+        });
+
+        vbox.getChildren().add(button);
     }
 }

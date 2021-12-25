@@ -2,9 +2,9 @@ package agh.ics.oop;
 
 import java.util.*;
 
-public class Animal extends AbstractWorldMapElement{
-    private IWorldMap map;
-    private List<IPositionChangeObserver> observers= new ArrayList<>();
+public class Animal extends WorldMapElement {
+    private final IWorldMap map;
+    private final List<IPositionChangeObserver> observers= new ArrayList<>();
     private int energy;
     private final int[] genotype;
 
@@ -16,19 +16,21 @@ public class Animal extends AbstractWorldMapElement{
         this.orientation = temp[random.nextInt(temp.length - 1)]; // without grass
         this.map = map;
         this.position = position;
-        this.genotype = Arrays.stream(random.ints(32, 0, 8).toArray()).sorted().toArray();
         // genotype of length 32 - sorted genes from 0 to 7
+        this.genotype = Arrays.stream(random.ints(32, 0, 8).toArray()).sorted().toArray();
         this.energy = StartEnergy;
     }
 
     // constructor related to magical event animals
-    public Animal(Animal animal)
+    public Animal(Animal animal, Vector2d position, int startEnergy)
     {
-        this.orientation = animal.orientation;
-        this.map = animal.map; // class - passed by reference, but we want to get the reference, not new instance of obj
-        this.position = new Vector2d(animal.position.x, animal.position.y); // class - passed by reference
-        this.genotype = Arrays.copyOf(animal.genotype, animal.genotype.length); // array - passed by reference
-        this.energy = animal.energy; // primitive type - passed by value
+        Random random = new Random();
+        MapDirection[] temp = MapDirection.values();
+        this.orientation = temp[random.nextInt(temp.length - 1)];
+        this.map = animal.map; // class - passed by reference, but we want to get the reference
+        this.position = position;
+        this.genotype = Arrays.copyOf(animal.genotype, animal.genotype.length); // genotype has to be the same
+        this.energy = startEnergy; // magical animals get full energy
     }
 
     // constructor related to procreation
@@ -95,7 +97,7 @@ public class Animal extends AbstractWorldMapElement{
             case FORWARD -> {
                 Vector2d newPosition = this.position.add(this.orientation.toUnitVector());
                 // if all moves are allowed on this map - for unbounded grass field
-                if(this.map instanceof GrassFieldUnbounded)
+                if(this.map.isNotBounded())
                 {
                     newPosition = correctPositionForUnboundedMap(newPosition);
                     if (!this.map.canMoveTo(position))
@@ -111,7 +113,7 @@ public class Animal extends AbstractWorldMapElement{
             case BACKWARD -> {
                 Vector2d newPosition = this.position.subtract(this.orientation.toUnitVector());
 
-                if(this.map instanceof GrassFieldUnbounded)
+                if(this.map.isNotBounded())
                 {
                     newPosition = correctPositionForUnboundedMap(newPosition);
                     if (!this.map.canMoveTo(position))
@@ -157,7 +159,7 @@ public class Animal extends AbstractWorldMapElement{
 
     public int chooseGene()
     {
-        return this.genotype[new Random().ints(1, 0, this.genotype.length).toArray()[0]];
+        return this.genotype[new Random().nextInt(this.genotype.length)];
     }
 
     public void loseEnergy(int energyLoss)

@@ -18,7 +18,7 @@ public interface IWorldMap {
     boolean canMoveTo(Vector2d position);
 
     /**
-     * Place a animal on the map.
+     * Place an animal on the map.
      *
      * @param animal
      *            The animal to place on the map.
@@ -50,4 +50,14 @@ public interface IWorldMap {
     Vector2d getUpperCorner();
 
     Vector2d getLowerCorner();
+
+    int getStartEnergy();
+
+    void letDayPass();
+
+    int countAnimals();
+
+    boolean isNotBounded();
+
+    void conductMagicalEvent();
 }

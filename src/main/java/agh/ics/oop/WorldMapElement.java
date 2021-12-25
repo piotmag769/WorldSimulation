@@ -1,6 +1,6 @@
 package agh.ics.oop;
 
-public abstract class AbstractWorldMapElement implements IMapElement{
+public class WorldMapElement implements IMapElement{
     protected Vector2d position;
     protected MapDirection orientation;
 

@@ -1,22 +1,18 @@
 package agh.ics.oop;
 
 import agh.ics.oop.gui.App;
-import javafx.application.Platform;
-import javafx.scene.control.Button;
-import javafx.scene.layout.GridPane;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimulationEngine implements IEngine, Runnable{
-    // TODO all class
+public class SimulationEngineForTests implements IEngine, Runnable{
     private List<MoveDirection> directions;
-    private IWorldMap map;
-    private List<Animal> animals;
+    private final IWorldMap map;
+    private final List<Animal> animals;
     private App app;
     private int i = 0;
 
-    public SimulationEngine(List<MoveDirection> directions, IWorldMap map, Vector2d[] positions)
+    public SimulationEngineForTests(List<MoveDirection> directions, IWorldMap map, Vector2d[] positions)
     {
         this.directions = directions;
         this.map = map;

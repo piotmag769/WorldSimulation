@@ -4,32 +4,37 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
 
-public abstract class AbstractGrassField implements IWorldMap, IPositionChangeObserver {
+public class GrassField implements IWorldMap, IPositionChangeObserver {
     // using guava (google library) Multimap for storing different elements at the same position
-    protected Multimap<Vector2d, IMapElement> elementMultimap = ArrayListMultimap.create();
+    private final Multimap<Vector2d, IMapElement> elementMultimap = ArrayListMultimap.create();
     // list for making animals move
-    protected List<Animal> animalList = new ArrayList<>();
-    protected MapVisualizer MV = new MapVisualizer(this);
-    protected Vector2d upperCorner; // inclusive
-    protected Vector2d lowerCorner; // inclusive
+    private final List<Animal> animalList = new ArrayList<>();
+    private final MapVisualizer MV = new MapVisualizer(this);
+    private final Vector2d upperCorner; // inclusive
+    private final Vector2d lowerCorner; // inclusive
     // deriving from jg ratio
-    protected final Vector2d jungleLowerLeft; // inclusive
-    protected final Vector2d jungleUpperRight; // exclusive
-    protected final int energyLoss;
-    protected final int energyGain;
-    protected final int startEnergy;
+    private final Vector2d jungleLowerLeft; // inclusive
+    private final Vector2d jungleUpperRight; // exclusive
+
+    // can be public because it's final anyways
+    private final boolean isBounded;
+    private final int energyLoss;
+    private final int plantEnergy;
+    private final int startEnergy;
 
 
-    public AbstractGrassField(int width, int height, double jungleRatio, int energyLoss, int energyGain, int startEnergy)
+    public GrassField(int width, int height, double jungleRatio, int energyLoss, int energyGain, int startEnergy, boolean isBounded)
     {
         this.lowerCorner = new Vector2d(0, 0);
         this.upperCorner = new Vector2d(width - 1, height - 1);
-        // care, casting
-        this.jungleLowerLeft = new Vector2d((int) (jungleRatio*width/2), (int) (jungleRatio*height/2));
+        // care, casting!!!
+        this.jungleLowerLeft = new Vector2d((width - (int) (jungleRatio*width/2))/2, (height - (int) (jungleRatio*height/2))/2);
         this.jungleUpperRight = new Vector2d(jungleLowerLeft.x + (int) (jungleRatio*width), jungleLowerLeft.y + (int) (jungleRatio*height));
-        this.energyGain = energyGain;
+
+        this.plantEnergy = energyGain;
         this.energyLoss = energyLoss;
         this.startEnergy = startEnergy;
+        this.isBounded = isBounded;
     }
 
     @Override
@@ -78,7 +83,8 @@ public abstract class AbstractGrassField implements IWorldMap, IPositionChangeOb
         this.elementMultimap.put(newPosition, animal);
     }
 
-    public void let_day_pass()
+    @Override
+    public void letDayPass()
     {
         this.removeDeadOnes();
 
@@ -116,6 +122,7 @@ public abstract class AbstractGrassField implements IWorldMap, IPositionChangeOb
             animal.loseEnergy(energyLoss);
 
             int move = animal.chooseGene();
+
             if (move == 0)
                 animal.move(MoveDirection.FORWARD);
             else if (move == 4)
@@ -164,7 +171,7 @@ public abstract class AbstractGrassField implements IWorldMap, IPositionChangeOb
                             animalsGettingFood.add((Animal) element);
 
                     // and parting food between them
-                    energyIncrease = energyGain / animalsGettingFood.size();
+                    energyIncrease = plantEnergy / animalsGettingFood.size();
                     for (Animal animal : animalsGettingFood)
                         animal.gainEnergy(energyIncrease);
                 }
@@ -196,7 +203,11 @@ public abstract class AbstractGrassField implements IWorldMap, IPositionChangeOb
 
                 // creating new animal if conditions for copulation are met
                 if (animalsCopulating[0].getEnergy() > startEnergy/2 && animalsCopulating[0].getEnergy() > startEnergy/2)
-                    elementMultimap.put(key, new Animal(this, animalsCopulating[0], animalsCopulating[1]));
+                {
+                    Animal animal = new Animal(this, animalsCopulating[0], animalsCopulating[1]);
+                    elementMultimap.put(key, animal);
+                    animalList.add(animal);
+                }
             }
     }
 
@@ -255,5 +266,40 @@ public abstract class AbstractGrassField implements IWorldMap, IPositionChangeOb
     public Vector2d getLowerCorner()
     {
         return lowerCorner;
+    }
+
+    @Override
+    public int getStartEnergy()
+    {
+        return this.startEnergy;
+    }
+
+    @Override
+    public int countAnimals()
+    {
+        return animalList.size();
+    }
+
+    @Override
+    public boolean isNotBounded()
+    {
+        return !isBounded;
+    }
+
+    @Override
+    public void conductMagicalEvent()
+    {
+        Random random = new Random();
+        Vector2d position;
+        // i < 5 because it is specified that magical event happens when there are 5 animals on the map
+        // TODO throw exception when not possible to add animals
+        for(int i = 0; i < 5; i++)
+        {
+            do {
+                position = new Vector2d(random.nextInt(upperCorner.x + 1) - lowerCorner.x, random.nextInt(upperCorner.y + 1) - lowerCorner.y);
+            } while(isOccupied(position));
+
+            place(new Animal(animalList.get(i), position, startEnergy));
+        }
     }
 }

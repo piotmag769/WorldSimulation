@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
 
 public class WorldMapElement implements IMapElement{
     protected Vector2d position;

@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
 
 enum Direction {
     BACKWARD,

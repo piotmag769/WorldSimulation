@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
 
 
 import agh.ics.oop.gui.App;
@@ -10,14 +10,7 @@ public class World {
     {
         System.out.println("system wystartował");
 
-        try
-        {
-            Application.launch(App.class, args);
-        }
-        catch(IllegalArgumentException e)
-        {
-            System.out.println(e.getMessage());
-        }
+        Application.launch(App.class, args);
 
         System.out.println("system zakończył działanie");
     }

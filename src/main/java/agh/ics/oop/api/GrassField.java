@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
 import java.util.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -23,15 +23,15 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     private final int startEnergy;
 
 
-    public GrassField(int width, int height, double jungleRatio, int energyLoss, int energyGain, int startEnergy, boolean isBounded)
+    public GrassField(int width, int height, double jungleRatio, int energyLoss, int plantEnergy, int startEnergy, boolean isBounded)
     {
         this.lowerCorner = new Vector2d(0, 0);
         this.upperCorner = new Vector2d(width - 1, height - 1);
         // care, casting!!!
-        this.jungleLowerLeft = new Vector2d((width - (int) (jungleRatio*width/2))/2, (height - (int) (jungleRatio*height/2))/2);
+        this.jungleLowerLeft = new Vector2d((width - (int) (jungleRatio*width))/2, (height - (int) (jungleRatio*height))/2);
         this.jungleUpperRight = new Vector2d(jungleLowerLeft.x + (int) (jungleRatio*width), jungleLowerLeft.y + (int) (jungleRatio*height));
 
-        this.plantEnergy = energyGain;
+        this.plantEnergy = plantEnergy;
         this.energyLoss = energyLoss;
         this.startEnergy = startEnergy;
         this.isBounded = isBounded;
@@ -97,7 +97,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         this.makeGrassGrow();
     }
 
-    public void removeDeadOnes()
+    private void removeDeadOnes()
     {
         // care about concurrent modification exception
         Object[] keySet = elementMultimap.keySet().toArray();
@@ -115,7 +115,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         }
     }
 
-    public void makeAnimalsMove()
+    private void makeAnimalsMove()
     {
         for(Animal animal: animalList)
         {
@@ -134,7 +134,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         }
     }
 
-    public void eatGrass()
+    private void eatGrass()
     {
         boolean isGrassOnTheField;
         int maxEnergy, energyIncrease;
@@ -179,7 +179,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         }
     }
 
-    public void copulate()
+    private void copulate()
     {
         int animalWithLessEnergy;
         for(Vector2d key: elementMultimap.keySet())
@@ -211,7 +211,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             }
     }
 
-    public void makeGrassGrow()
+    private void makeGrassGrow()
     {
         Random random = new Random();
 
@@ -220,7 +220,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
 
         for(int i = 0; i < 2; i++)
         {
-            freeFields = getFreeAreaFrom(i == 0);
+            freeFields = getFreeAreaFrom(false,i == 0);
             if (freeFields.size() != 0)
             {
                 position = freeFields.get(random.nextInt(freeFields.size()));
@@ -235,7 +235,9 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         return position.follows(jungleLowerLeft) && position.precedes(jungleUpperRight.subtract(new Vector2d(1, 1)));
     }
 
-    private List<Vector2d> getFreeAreaFrom(boolean isJungle)
+    @Override
+    // second argument is effectively ignored if value of the first is true
+    public List<Vector2d> getFreeAreaFrom(boolean fromAllMap, boolean isJungle)
     {
         List<Vector2d> result = new ArrayList<>();
 
@@ -243,7 +245,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             for(int j = 0; j < upperCorner.y + 1; j++)
             {
                 Vector2d position = new Vector2d(i, j);
-                if (isJungle == isInJungle(position) && !isOccupied(position))
+                if ((fromAllMap || isJungle == isInJungle(position)) && !isOccupied(position))
                     result.add(position);
             }
 
@@ -292,14 +294,19 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         Random random = new Random();
         Vector2d position;
         // i < 5 because it is specified that magical event happens when there are 5 animals on the map
-        // TODO throw exception when not possible to add animals
+
+        List<Vector2d> freeArea = getFreeAreaFrom(true, false);
+
+        // throw exception when not possible to add animals
+        if(freeArea.size() < 5)
+            throw new IllegalStateException("Cannot conduct magical event - not enough places on the map");
+
         for(int i = 0; i < 5; i++)
         {
-            do {
-                position = new Vector2d(random.nextInt(upperCorner.x + 1) - lowerCorner.x, random.nextInt(upperCorner.y + 1) - lowerCorner.y);
-            } while(isOccupied(position));
+            position = freeArea.get(random.nextInt(freeArea.size()));
 
             place(new Animal(animalList.get(i), position, startEnergy));
+            freeArea.remove(position);
         }
     }
 }

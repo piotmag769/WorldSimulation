@@ -1,20 +1,17 @@
 package agh.ics.oop.gui;
 
-import agh.ics.oop.*;
+import agh.ics.oop.api.*;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class App extends Application{
     // temporary fields to simplify the code
@@ -24,180 +21,52 @@ public class App extends Application{
     private int x_len;
     private int y_len;
 
-    private IWorldMap map;
+    //TODO get moveDelay
     private final int moveDelay = 1000;
-    private SimulationEngineForTests engine;
-    public GridPane grid;
 
+    private IWorldMap boundedMap, unboundedMap;
+    private IEngine boundedEngine, unboundedEngine;
 
-    public int width;
-    public int height;
-    public double jungleRatio;
-    public int startEnergy;
-    public int energyLoss;
-    public int plantEnergy;
-    public int animalsAtStart; // (>= 10)
+    HBox boundedMapHBox = new HBox();
+    HBox unboundedMapHBox = new HBox();
 
+    private int width;
+    private int height;
+    private double jungleRatio;
+    private int startEnergy;
+    private int energyLoss;
+    private int plantEnergy;
+    private int animalsAtStart; // (>= 10)
+    // decided to make both maps either magical or not, "dla każdej mapy" - specification not clear
+    private boolean isMagical;
 
-    //TODO all class
-    @Override
-    public void init()
-    {
-        try
-        {
-            ArrayList<MoveDirection> directions = OptionsParser.parse(getParameters().getRaw());
-            GrassField map = new GrassField(3, 5, 0.5, 1, 2, 8, true);
-            Vector2d[] positions = {new Vector2d(4, 4), new Vector2d(7, 7)};
-
-            this.engine = new SimulationEngineForTests(directions, map, positions);
-            this.engine.setApp(this);
-            this.map = map;
-
-            // temporary fields to simplify the code
-            this.lower_corner = map.getLowerCorner();
-            this.upper_corner = map.getUpperCorner();
-
-            this.x_len = upper_corner.x - lower_corner.x + 1;
-            this.y_len = upper_corner.y - lower_corner.y + 1;
-
-
-        }
-        catch (IllegalArgumentException e)
-        {
-            System.out.println(e.getMessage());
-        }
-    }
+    private boolean parametersAccepted = false;
 
     @Override
     public void start(Stage primaryStage) {
-        // get data from user
-        getParametersFromUser(primaryStage);
-
-        //gui part
-//        this.primaryStage = primaryStage;
-//
-//        this.grid = new GridPane();
-//
-//        grid.setGridLinesVisible(true);
-//
-//        this.create_and_add_axis_labels(grid);
-//
-//        this.create_and_add_elements(grid);
-//
-//        this.set_col_row_sizes(grid);
-//
-//        Scene scene = new Scene(grid, 500, 500);
-//
-//        primaryStage.setScene(scene);
-//        primaryStage.show();
-    }
-
-    public void create_and_add_axis_labels(GridPane grid)
-    {
-        // y/x label
-        Label label1 = new Label("y\\x");
-        GridPane.setHalignment(label1, HPos.CENTER);
-        grid.add(label1, 0, 0);
-
-        // labeling y axis
-        for(int i = 0; i < y_len; i++)
-        {
-            Label label = new Label(Integer.toString(upper_corner.y - i));
-            GridPane.setHalignment(label, HPos.CENTER);
-            grid.add(label, 0, i + 1);
-        }
-
-        // labeling x axis
-        for(int i = 0; i < x_len; i++)
-        {
-            Label label = new Label(Integer.toString(i + lower_corner.x));
-            GridPane.setHalignment(label, HPos.CENTER);
-            grid.add(label, i + 1, 0);
-        }
-    }
-
-    public void create_and_add_elements(GridPane grid)
-    {
-
-        // filling map
-        for(int i = 0; i < x_len; i++)
-            for(int j = 0; j < y_len; j++)
-            {
-                // buttons[i][j] refers to position (i + lower_corner.x, j + lower_corner.y) on the map
-                Object obj = map.objectAt(new Vector2d(lower_corner.x + i, lower_corner.y + j));
-
-                if (obj != null)
-                {
-                    Labeled node = GuiElementButton.createElement((IMapElement) obj);
-                    GridPane.setHalignment(node, HPos.CENTER);
-                    grid.add(node, i + 1, y_len - j);
-                }
-            }
-
-        TextField textField = new TextField();
-        grid.add(textField, 1, y_len + 1, 3, 1);
-
-        Button btnStart=new Button("\u25B6");
-        GridPane.setHalignment(btnStart, HPos.CENTER);
-        grid.add(btnStart, 0, y_len + 1);
-
-        btnStart.setOnAction(e -> {
+        Thread parametersThread = new Thread(() -> getParametersFromUser(primaryStage));
+        Thread mapCreationThread = new Thread(() -> {
             try {
-                String[] args = textField.getText().split(" ");
-                engine.setDirections(OptionsParser.parse(List.of(args)));
-                Thread engineThread = new Thread(() -> {
-                    for(int i = 0; i < engine.getDirectionLength(); i++)
-                    {
-                        try {
-                            Thread.sleep(moveDelay);
-                        } catch (InterruptedException e1) {
-                            e1.printStackTrace();
-                        }
-                        Platform.runLater(engine);
-                    }
-                }
-                );
-
-                engineThread.setDaemon(true);
-                engineThread.start();
+                createMapsAndEngines(primaryStage);
+            } catch (InterruptedException | IllegalStateException | IllegalArgumentException e ) {
+                System.out.println(e.getMessage());
+                System.exit(0);
             }
-            catch(IllegalArgumentException exception)
-            {
-                System.out.println(exception.getMessage());
-            }
-        }
-        );
+        });
 
-    }
-
-    public void set_col_row_sizes(GridPane grid)
-    {
-        //setting columns' sizes
-        for(int i = 0; i < x_len + 1; i++)
-        {
-            ColumnConstraints col1 = new ColumnConstraints();
-            col1.setPercentWidth(100);
-            col1.setFillWidth(Boolean.TRUE);
-            grid.getColumnConstraints().add(col1);
-        }
-
-        // setting rows' sizes
-        for(int i = 0; i < y_len + 1 + 1 /* plus button row */; i++)
-        {
-            RowConstraints row1 = new RowConstraints();
-            row1.setPercentHeight(100);
-//            row1.setFillHeight(Boolean.TRUE);
-            grid.getRowConstraints().add(row1);
-
-        }
+        parametersThread.start();
+        mapCreationThread.start();
     }
 
     public void getParametersFromUser(Stage primaryStage)
     {
-        Scene scene = new Scene(createArgumentGetter(), 500, 580);
-        primaryStage.setScene(scene);
-        primaryStage.setTitle("Map project");
-        primaryStage.show();
+        Platform.runLater(() -> {
+            Scene scene = new Scene(createArgumentGetter(), 500, 600);
+            primaryStage.setScene(scene);
+            primaryStage.setResizable(false);
+            primaryStage.setTitle("Map project");
+            primaryStage.show();
+        });
     }
 
     public VBox createArgumentGetter()
@@ -222,20 +91,26 @@ public class App extends Application{
         String[] stringParameters = {
                 "Width",
                 "Height",
-                "Jungle Ratio (percentage)",
-                "Start Energy",
-                "Energy Loss",
-                "Plant Energy",
-                "Animals At Start"
+                "Jungle ratio (percentage)",
+                "Start energy",
+                "Energy loss",
+                "Plant energy",
+                "Animals at start"
         };
 
         for(int i = 0; i < numericParameters.length; i++)
             addLabelAndSlider(sliders, i, vbox, numericParameters[i][0], numericParameters[i][1], numericParameters[i][2], numericParameters[i][3], stringParameters[i]);
 
-        addAcceptButton(vbox, sliders);
+        // adding checkbox for isMagical attribute
+        CheckBox checkBox = new CheckBox("Magical events");
+        checkBox.setIndeterminate(false);
+        vbox.getChildren().add(checkBox);
+
+        addAcceptButton(vbox, sliders, checkBox);
 
         return vbox;
     }
+
     // adding label and slider to the vbox and the sliders table
     private void addLabelAndSlider(Slider[] sliders, int index, VBox vbox, int min, int max, int value, int majorTickUnit, String title)
     {
@@ -259,7 +134,7 @@ public class App extends Application{
     }
 
     // adding button (getting values from sliders on action) to the vbox
-    private void addAcceptButton(VBox vbox, Slider[] sliders)
+    private void addAcceptButton(VBox vbox, Slider[] sliders, CheckBox checkBox)
     {
         Button button = new Button("Accept parameters");
         button.setOnAction(e -> {
@@ -270,8 +145,153 @@ public class App extends Application{
             this.energyLoss = (int) sliders[4].getValue();
             this.plantEnergy = (int) sliders[5].getValue();
             this.animalsAtStart = (int) sliders[6].getValue();
+            this.isMagical = checkBox.isSelected();
+
+            System.out.println(width + " " + height + " " + jungleRatio + " " + startEnergy + " " + energyLoss + " " + " " + plantEnergy + " " + plantEnergy + " " + isMagical);
+
+            synchronized(this)
+            {
+                parametersAccepted = true;
+                notifyAll();
+            }
         });
 
         vbox.getChildren().add(button);
     }
+
+    public void createMapsAndEngines(Stage primaryStage) throws InterruptedException
+    {
+        synchronized (this) {
+            while (!parametersAccepted)
+                wait();
+        }
+
+        this.boundedMap = new GrassField(width, height, jungleRatio, energyLoss, plantEnergy, startEnergy, true);
+        this.unboundedMap = new GrassField(width, height, jungleRatio, energyLoss, plantEnergy, startEnergy, false);
+
+        this.boundedEngine = new SimulationEngine(boundedMap, this.animalsAtStart, this.isMagical);
+        this.unboundedEngine = new SimulationEngine(unboundedMap, this.animalsAtStart, this.isMagical);
+
+        // temporary fields to simplify the code
+        this.lower_corner = boundedMap.getLowerCorner();
+        this.upper_corner = boundedMap.getUpperCorner();
+
+        this.x_len = upper_corner.x - lower_corner.x + 1;
+        this.y_len = upper_corner.y - lower_corner.y + 1;
+
+        // creating gui for maps
+        Platform.runLater(() -> {
+
+
+            VBox.setMargin(boundedMapHBox, new Insets(20));
+            VBox.setMargin(unboundedMapHBox, new Insets(20));
+
+
+            GridPane boundedGridPane = new GridPane();
+            GridPane unboundedGridPane = new GridPane();
+
+            boundedGridPane.setGridLinesVisible(true);
+            unboundedGridPane.setGridLinesVisible(true);
+
+            boundedMapHBox.getChildren().add(boundedGridPane);
+            unboundedMapHBox.getChildren().add(unboundedGridPane);
+
+            createAndAddAxisLabels(boundedGridPane);
+            createAndAddAxisLabels(unboundedGridPane);
+
+            setColRowSizes(boundedGridPane);
+            setColRowSizes(unboundedGridPane);
+
+
+
+            // packing HBoxes into VBox and assigning it to stage
+            VBox root = new VBox();
+            root.setPadding(new Insets(10));
+            root.setFillWidth(true);
+            root.getChildren().addAll(boundedMapHBox, unboundedMapHBox);
+            root.setAlignment(Pos.CENTER);
+
+            Scene scene = new Scene(root, 1000, 800);
+
+            Stage mapStage = new Stage();
+
+            mapStage.setScene(scene);
+
+            // hide previous window, show the new one
+            primaryStage.hide();
+            mapStage.show();
+
+            // center window on screen
+            Rectangle2D primScreenBounds = Screen.getPrimary().getVisualBounds();
+            mapStage.setX((primScreenBounds.getWidth() - mapStage.getWidth()) / 2);
+            mapStage.setY((primScreenBounds.getHeight() - mapStage.getHeight()) / 2);
+
+        });
+    }
+
+    public void createAndAddAxisLabels(GridPane grid)
+    {
+        // y/x label
+        Label label1 = new Label("y\\x");
+        GridPane.setHalignment(label1, HPos.CENTER);
+        grid.add(label1, 0, 0);
+
+        // labeling y axis
+        for(int i = 0; i < y_len; i++)
+        {
+            Label label = new Label(Integer.toString(upper_corner.y - i));
+            GridPane.setHalignment(label, HPos.CENTER);
+            grid.add(label, 0, i + 1);
+        }
+
+        // labeling x axis
+        for(int i = 0; i < x_len; i++)
+        {
+            Label label = new Label(Integer.toString(i + lower_corner.x));
+            GridPane.setHalignment(label, HPos.CENTER);
+            grid.add(label, i + 1, 0);
+        }
+    }
+
+    public void createAndAddElements(GridPane grid)
+    {
+        // filling map
+        for(int i = 0; i < x_len; i++)
+            for(int j = 0; j < y_len; j++)
+            {
+                // buttons[i][j] refers to position (i + lower_corner.x, j + lower_corner.y) on the map
+                Object obj = unboundedMap.objectAt(new Vector2d(lower_corner.x + i, lower_corner.y + j));
+
+                if (obj != null)
+                {
+                    Labeled node = GuiElementButton.createElement((IMapElement) obj);
+                    GridPane.setHalignment(node, HPos.CENTER);
+                    grid.add(node, i + 1, y_len - j);
+                }
+            }
+    }
+
+    public void setColRowSizes(GridPane grid)
+    {
+        //setting columns' sizes
+        for(int i = 0; i < x_len + 1; i++)
+        {
+            ColumnConstraints col1 = new ColumnConstraints();
+            col1.setPercentWidth(100);
+            col1.setFillWidth(Boolean.TRUE);
+            grid.getColumnConstraints().add(col1);
+        }
+
+        // setting rows' sizes
+        for(int i = 0; i < y_len + 1; i++)
+        {
+            RowConstraints row1 = new RowConstraints();
+            row1.setPercentHeight(100);
+//            row1.setFillHeight(Boolean.TRUE);
+            grid.getRowConstraints().add(row1);
+
+        }
+    }
+
+
 }

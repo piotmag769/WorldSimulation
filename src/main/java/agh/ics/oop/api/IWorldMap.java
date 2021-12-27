@@ -1,4 +1,6 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
+
+import java.util.List;
 
 /**
  * The interface responsible for interacting with the map of the world.
@@ -60,4 +62,6 @@ public interface IWorldMap {
     boolean isNotBounded();
 
     void conductMagicalEvent();
+
+    List<Vector2d> getFreeAreaFrom(boolean fromAllMap, boolean isJungle);
 }

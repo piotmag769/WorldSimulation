@@ -1,6 +1,8 @@
 package agh.ics.oop.gui;
 
-import agh.ics.oop.*;
+import agh.ics.oop.api.Grass;
+import agh.ics.oop.api.IMapElement;
+import agh.ics.oop.api.MapDirection;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;

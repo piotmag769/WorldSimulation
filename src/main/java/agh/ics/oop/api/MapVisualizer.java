@@ -1,4 +1,4 @@
-package agh.ics.oop;
+package agh.ics.oop.api;
 
 /**
  * The map visualizer converts the {@link IWorldMap} map into a string

@@ -4,27 +4,37 @@ import agh.ics.oop.filemanagement.FileManager;
 import agh.ics.oop.gui.App;
 import agh.ics.oop.gui.LinearPlot;
 import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 public class SimulationEngine implements Runnable, IEngine{
     private final IWorldMap map;
-    private final boolean isMagical;
-    private int magicalEventsHappened = 0;
+
     private final App app;
     private GridPane gridPane;
-    private VBox trackingBox;
-    private FileManager fileManager;
-    private boolean isStopped = false;
-    private final int MOVE_DELAY = 1000;
+    private Text text;
     private LinearPlot linearPlot;
+
+    private FileManager fileManager;
+    private List<Button> animalButtonsList = new ArrayList<>();
+    private List<Animal> animalsAssignedToButtons = new ArrayList<>();
+
+    private boolean isStopped = false;
+    private final boolean isMagical;
+
+    private final int MOVE_DELAY = 50;
     private int dayCount = 0;
+    private int magicalEventsHappened = 0;
 
     public SimulationEngine(IWorldMap map, int animalsAtStart, boolean isMagical, App app, String filename)
     {
@@ -77,14 +87,18 @@ public class SimulationEngine implements Runnable, IEngine{
             }
         }
 
+
         // conduct magical event if conditions are met
         if(isMagical && magicalEventsHappened < 3 && this.map.getAnimalsPassed() == 5)
         {
-            System.out.println("Whoosh! Magic happened");
             this.map.conductMagicalEvent();
             magicalEventsHappened++;
+
             Platform.runLater(() -> {
-                // TODO communicate user with GUI about magical event
+                Scene scene = new Scene(new Label("Whoosh! Magic happened"));
+                Stage stage = new Stage();
+                stage.setScene(scene);
+                stage.show();
             });
         }
 
@@ -120,20 +134,39 @@ public class SimulationEngine implements Runnable, IEngine{
     }
 
     @Override
+    public void setText(Text text) {
+        this.text = text;
+    }
+
+    @Override
+    public void addAnimalButton(Button button, Animal animal) {
+        animalButtonsList.add(button);
+        animalsAssignedToButtons.add(animal);
+    }
+
+    @Override
+    public void clearAnimalButtons()
+    {
+        animalButtonsList.clear();
+        animalsAssignedToButtons.clear();
+    }
+
+    @Override
+    public void highlightDominantGenotypeAnimals() {
+        int[] genotype = map.getDominantGenotype();
+        for(int i = 0; i < animalButtonsList.size(); i++)
+            if (Arrays.equals(animalsAssignedToButtons.get(i).getGenotype(), genotype))
+                animalButtonsList.get(i).setStyle("-fx-background-color: #ff0000");
+    }
+
+    @Override
     public void setLinearPlot(LinearPlot linearPlot)
     {
         this.linearPlot = linearPlot;
     }
 
-    @Override
-    public void setTrackingBox(VBox trackingBox) {
-        this.trackingBox = trackingBox;
-    }
-
     private void updateDominantGenotype()
     {
-        trackingBox.getChildren().clear();
-
         String string = Arrays.toString(map.getDominantGenotype());
         string = string.substring(1, string.length() - 1);
 
@@ -146,9 +179,7 @@ public class SimulationEngine implements Runnable, IEngine{
                 res = res.append(curr);
         }
 
-        Text text = new Text("Dominant genotype:\n" + res);
-
-        trackingBox.getChildren().add(text);
+        text.setText("Dominant genotype:\n" + res);
     }
 
     private void updateGui(Number[] statistic)
@@ -160,7 +191,24 @@ public class SimulationEngine implements Runnable, IEngine{
         this.gridPane.setGridLinesVisible(false);
         this.gridPane.getChildren().clear();
         this.app.createAndAddAxisLabels(this.gridPane);
-        this.app.createAndAddElements(this.gridPane, this.map);
+        this.app.createAndAddElements(this.gridPane, this.map, this);
         this.gridPane.setGridLinesVisible(true);
+    }
+
+    @Override
+    public void saveAverageDataToFile()
+    {
+        this.fileManager.writeDayToFile(linearPlot.getAverageData());
+    }
+
+    @Override
+    public boolean isStopped()
+    {
+        return this.isStopped;
+    }
+
+    @Override
+    public void startTrackingAnimal(Animal animal) {
+
     }
 }

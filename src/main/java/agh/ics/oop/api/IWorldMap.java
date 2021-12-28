@@ -41,5 +41,7 @@ public interface IWorldMap {
 
     void conductMagicalEvent();
 
+    void setTrackedAnimal(Animal animal);
+
     List<Vector2d> getFreeAreaFrom(boolean fromAllMap, boolean isJungle);
 }

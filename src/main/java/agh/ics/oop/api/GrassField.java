@@ -18,6 +18,8 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     private final Vector2d jungleLowerLeft; // inclusive
     private final Vector2d jungleUpperRight; // exclusive
 
+    private Animal trackedAnimal;
+
     // can be public because it's final anyways
     private final boolean isBounded;
     private final int energyLoss;
@@ -423,5 +425,11 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         }
 
         return res;
+    }
+
+    @Override
+    public void setTrackedAnimal(Animal animal)
+    {
+        this.trackedAnimal = animal;
     }
 }

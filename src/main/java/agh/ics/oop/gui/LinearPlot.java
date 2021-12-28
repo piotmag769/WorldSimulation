@@ -49,4 +49,25 @@ public class LinearPlot {
         for(int i = 0; i < dailyData.length; i++)
             series.get(i).getData().add((new XYChart.Data<>(dayCount, dailyData[i])));
     }
+
+    public Number[] getAverageData()
+    {
+        // series.size() == 5
+        int n = series.size();
+        Number[] res = new Number[n];
+        double[] sums = new double[n];
+        for(int i = 0; i < n; i++)
+        {
+            var data = series.get(i).getData();
+
+            for (XYChart.Data<Number, Number> datum : data)
+                sums[i] += datum.getYValue().doubleValue();
+        }
+
+        int count = series.get(0).getData().size();
+        for(int i = 0; i < n; i++)
+            res[i] = sums[i]/count;
+
+        return res;
+    }
 }

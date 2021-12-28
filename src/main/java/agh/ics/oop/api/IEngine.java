@@ -1,8 +1,10 @@
 package agh.ics.oop.api;
 
 import agh.ics.oop.gui.LinearPlot;
+import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
 
 public interface IEngine {
 
@@ -14,5 +16,17 @@ public interface IEngine {
 
     void changeEngineState();
 
-    void setTrackingBox(VBox trackingBox);
+    void setText(Text text);
+
+    void addAnimalButton(Button button, Animal animal);
+
+    void clearAnimalButtons();
+
+    void highlightDominantGenotypeAnimals();
+
+    void saveAverageDataToFile();
+
+    boolean isStopped();
+
+    void startTrackingAnimal(Animal animal);
 }

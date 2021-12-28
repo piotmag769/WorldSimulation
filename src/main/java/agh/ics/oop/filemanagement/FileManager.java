@@ -1,6 +1,5 @@
 package agh.ics.oop.filemanagement;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,7 +25,7 @@ public record FileManager(String filename) {
         for (int i = 0; i < string.length(); i++) {
             char curr = string.charAt(i);
             if (curr != ' ')
-                res = res.append(curr);
+                res.append(curr);
         }
 
         // to not care about manually closing the program and file (inefficient, I know)

@@ -9,6 +9,7 @@ public class Animal extends WorldMapElement {
     private final int[] genotype;
     private int lifetime = 0;
     private int numberOfChildren = 0;
+    private Animal trackedAncestor;
 
     // constructor related to first animals
     public Animal(IWorldMap map, Vector2d position, int StartEnergy)
@@ -197,5 +198,9 @@ public class Animal extends WorldMapElement {
     public int[] getGenotype()
     {
         return genotype;
+    }
+
+    public void setTrackedAncestor(Animal trackedAncestor) {
+        this.trackedAncestor = trackedAncestor;
     }
 }

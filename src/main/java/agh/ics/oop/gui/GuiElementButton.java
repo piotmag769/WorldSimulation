@@ -1,17 +1,23 @@
 package agh.ics.oop.gui;
 
 import agh.ics.oop.api.Animal;
-import agh.ics.oop.api.Grass;
+import agh.ics.oop.api.IEngine;
 import agh.ics.oop.api.IMapElement;
 import agh.ics.oop.api.MapDirection;
-import javafx.geometry.HPos;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.Labeled;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
+import javafx.stage.Window;
 
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +36,7 @@ public class GuiElementButton {
         put(MapDirection.GRASS, new Image(MapDirection.GRASS.getImagePath()));
     }};
 
-    public static Button createElement(IMapElement element, double width, double height, int startEnergy)
+    public static Button createElement(IMapElement element, double width, double height, int startEnergy, IEngine engine)
     {
         Image image = views_map.get(element.getOrientation());
         ImageView imageView = new ImageView(image);
@@ -41,7 +47,7 @@ public class GuiElementButton {
         // in case of grass clicking on button has no effect
         Button button = new Button();
 
-        setButtonColor(button, startEnergy, element);
+        setButtonColor(button, startEnergy, element, engine);
 
         button.setGraphic(imageView);
 
@@ -53,7 +59,7 @@ public class GuiElementButton {
     }
 
 
-    private static void setButtonColor(Button button, int startEnergy, IMapElement element)
+    private static void setButtonColor(Button button, int startEnergy, IMapElement element, IEngine engine)
     {
         String greenComponent;
 
@@ -73,6 +79,8 @@ public class GuiElementButton {
             // to match css format
             if (greenComponent.length() == 1)
                 greenComponent = "0" + greenComponent;
+
+            setButtonOnAction(button, animal, engine);
         }
         else {
             greenComponent = "ff";
@@ -81,8 +89,39 @@ public class GuiElementButton {
         button.setStyle("-fx-background-color: #ff" + greenComponent + "ff");
     }
 
-    private static void setButtonOnClick()
+    private static void setButtonOnAction(Button button, Animal animal, IEngine engine)
     {
+        button.setOnAction(event -> {
+            // only can do that if simulation is stopped
+            if (engine.isStopped())
+            {
+                Button button1 = new Button("Show genotype");
+                Button button2 = new Button("Track");
 
+                HBox.setMargin(button1, new Insets(20));
+
+                HBox.setMargin(button2, new Insets(20));
+
+                HBox hBox = new HBox(button1, button2);
+
+                Scene scene = new Scene(hBox, 230, 100);
+
+                Stage stage = new Stage();
+                stage.setScene(scene);
+                stage.show();
+
+                button1.setOnAction(e -> {
+                    stage.hide();
+                    Stage genotypeStage = new Stage();
+                    genotypeStage.setScene(new Scene(new Label(Arrays.toString(animal.getGenotype())), 400, 100));
+                    genotypeStage.show();
+                });
+
+                button2.setOnAction(e -> {
+                    engine.startTrackingAnimal(animal);
+                    stage.hide();
+                });
+            }
+        });
     }
 }

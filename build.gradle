@@ -30,5 +30,5 @@ test {
 }
 
 application {
-    mainClassName = 'agh.ics.oop.World'
+    mainClassName = 'agh.ics.oop.api.World'
 }

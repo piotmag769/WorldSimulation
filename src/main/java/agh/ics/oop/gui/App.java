@@ -10,25 +10,37 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.scene.shape.Shape;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+
+import java.util.Objects;
 
 public class App extends Application{
     // temporary fields to simplify the code
     private Vector2d lower_corner;
     private Vector2d upper_corner;
+    private Vector2d jungleUpperCorner;
+    private Vector2d jungleLowerCorner;
 
     private int x_len;
     private int y_len;
 
-    //TODO get moveDelay
-    private final int moveDelay = 1000;
+    private final double GRID_SIZE = 480.0;
+    private double CELL_WIDTH;
+    private double CELL_HEIGHT;
 
     private IWorldMap boundedMap, unboundedMap;
     private IEngine boundedEngine, unboundedEngine;
+    private Thread boundedThread, unboundedThread;
 
-    HBox boundedMapHBox = new HBox();
-    HBox unboundedMapHBox = new HBox();
+    private HBox boundedHBox;
+    private HBox unboundedHBox;
+
+    private VBox boundedTrackingBox;
+    private VBox unboundedTrackingBox;
 
     private int width;
     private int height;
@@ -39,23 +51,58 @@ public class App extends Application{
     private int animalsAtStart; // (>= 10)
     // decided to make both maps either magical or not, "dla każdej mapy" - specification not clear
     private boolean isMagical;
-
     private boolean parametersAccepted = false;
+    private boolean mapsAndEnginesCreated = false;
+
 
     @Override
-    public void start(Stage primaryStage) {
-        Thread parametersThread = new Thread(() -> getParametersFromUser(primaryStage));
+    public void start(Stage welcomeStage) {
+        Thread parametersThread = new Thread(() -> getParametersFromUser(welcomeStage));
         Thread mapCreationThread = new Thread(() -> {
             try {
-                createMapsAndEngines(primaryStage);
+                makeMapStage(welcomeStage);
             } catch (InterruptedException | IllegalStateException | IllegalArgumentException e ) {
                 System.out.println(e.getMessage());
                 System.exit(0);
             }
         });
 
+        Thread mapThread = new Thread(() -> {
+            synchronized (this)
+            {
+                while (!mapsAndEnginesCreated) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            boundedThread = new Thread(() -> {
+                while (true) {
+                    boundedEngine.run();
+                }
+            });
+
+            unboundedThread = new Thread(() -> {
+                while (true) {
+                    unboundedEngine.run();
+                }
+            });
+
+            boundedThread.setDaemon(true);
+            boundedThread.start();
+
+            unboundedThread.setDaemon(true);
+            unboundedThread.start();
+        });
+
+
         parametersThread.start();
         mapCreationThread.start();
+        mapThread.start();
+        //TODO tracking and files
     }
 
     public void getParametersFromUser(Stage primaryStage)
@@ -147,8 +194,6 @@ public class App extends Application{
             this.animalsAtStart = (int) sliders[6].getValue();
             this.isMagical = checkBox.isSelected();
 
-            System.out.println(width + " " + height + " " + jungleRatio + " " + startEnergy + " " + energyLoss + " " + " " + plantEnergy + " " + plantEnergy + " " + isMagical);
-
             synchronized(this)
             {
                 parametersAccepted = true;
@@ -159,82 +204,137 @@ public class App extends Application{
         vbox.getChildren().add(button);
     }
 
-    public void createMapsAndEngines(Stage primaryStage) throws InterruptedException
+    public void makeMapStage(Stage welcomeStage) throws InterruptedException
     {
         synchronized (this) {
             while (!parametersAccepted)
                 wait();
         }
 
+        createMapsAndEngines();
+
+        // creating necessary gui elements for maps
+        Platform.runLater(() -> {
+            createGuiMaps(welcomeStage);
+            addPauseButton(boundedHBox, boundedEngine);
+            addPauseButton(unboundedHBox, unboundedEngine);
+            addPlots();
+            addTrackingBoxes();
+        });
+
+        synchronized (this)
+        {
+            mapsAndEnginesCreated = true;
+            notifyAll();
+        }
+    }
+
+    public void createMapsAndEngines()
+    {
         this.boundedMap = new GrassField(width, height, jungleRatio, energyLoss, plantEnergy, startEnergy, true);
         this.unboundedMap = new GrassField(width, height, jungleRatio, energyLoss, plantEnergy, startEnergy, false);
 
-        this.boundedEngine = new SimulationEngine(boundedMap, this.animalsAtStart, this.isMagical);
-        this.unboundedEngine = new SimulationEngine(unboundedMap, this.animalsAtStart, this.isMagical);
+        this.boundedEngine = new SimulationEngine(boundedMap, this.animalsAtStart, this.isMagical, this, "src\\main\\resources\\statistics\\bounded_statistics.csv");
+        this.unboundedEngine = new SimulationEngine(unboundedMap, this.animalsAtStart, this.isMagical, this, "src\\main\\resources\\statistics\\unbounded_statistics.csv");
 
         // temporary fields to simplify the code
         this.lower_corner = boundedMap.getLowerCorner();
         this.upper_corner = boundedMap.getUpperCorner();
 
+        this.jungleLowerCorner = boundedMap.getJungleLowerCorner();
+        this.jungleUpperCorner = boundedMap.getJungleUpperCorner();
+
         this.x_len = upper_corner.x - lower_corner.x + 1;
         this.y_len = upper_corner.y - lower_corner.y + 1;
 
-        // creating gui for maps
-        Platform.runLater(() -> {
+        this.CELL_WIDTH = GRID_SIZE/(double) (x_len+1);
+        this.CELL_HEIGHT = GRID_SIZE/(double) (y_len+1);
+    }
 
+    public void createGuiMaps(Stage welcomeStage)
+    {
+        // repeating code to have variables with different names
+        GridPane boundedGridPane = new GridPane();
+        GridPane unboundedGridPane = new GridPane();
+        boundedGridPane.setMaxHeight(GRID_SIZE);
+        boundedGridPane.setMinHeight(GRID_SIZE);
+        boundedGridPane.setMaxWidth(GRID_SIZE);
+        boundedGridPane.setMinWidth(GRID_SIZE);
 
-            VBox.setMargin(boundedMapHBox, new Insets(20));
-            VBox.setMargin(unboundedMapHBox, new Insets(20));
+        unboundedGridPane.setMaxHeight(GRID_SIZE);
+        unboundedGridPane.setMinHeight(GRID_SIZE);
+        unboundedGridPane.setMaxWidth(GRID_SIZE);
+        unboundedGridPane.setMinWidth(GRID_SIZE);
 
+        // adding references to GridPanes to engines (to let them modify them)
+        this.boundedEngine.setGridPane(boundedGridPane);
+        this.unboundedEngine.setGridPane(unboundedGridPane);
 
-            GridPane boundedGridPane = new GridPane();
-            GridPane unboundedGridPane = new GridPane();
+        this.boundedHBox = new HBox(boundedGridPane);
+        this.unboundedHBox = new HBox(unboundedGridPane);
 
-            boundedGridPane.setGridLinesVisible(true);
-            unboundedGridPane.setGridLinesVisible(true);
+        VBox.setMargin(boundedHBox, new Insets(10));
+        VBox.setMargin(unboundedHBox, new Insets(10));
 
-            boundedMapHBox.getChildren().add(boundedGridPane);
-            unboundedMapHBox.getChildren().add(unboundedGridPane);
+        createAndAddAxisLabels(boundedGridPane);
+        createAndAddAxisLabels(unboundedGridPane);
 
-            createAndAddAxisLabels(boundedGridPane);
-            createAndAddAxisLabels(unboundedGridPane);
+        setColRowSizes(boundedGridPane);
+        setColRowSizes(unboundedGridPane);
 
-            setColRowSizes(boundedGridPane);
-            setColRowSizes(unboundedGridPane);
+        createAndAddElements(boundedGridPane, boundedMap);
+        createAndAddElements(unboundedGridPane, unboundedMap);
 
+        boundedGridPane.setGridLinesVisible(true);
+        unboundedGridPane.setGridLinesVisible(true);
 
+        // packing HBoxes into VBox
+        VBox root = new VBox();
+        root.getChildren().addAll(boundedHBox, unboundedHBox);
+        root.setAlignment(Pos.CENTER);
 
-            // packing HBoxes into VBox and assigning it to stage
-            VBox root = new VBox();
-            root.setPadding(new Insets(10));
-            root.setFillWidth(true);
-            root.getChildren().addAll(boundedMapHBox, unboundedMapHBox);
-            root.setAlignment(Pos.CENTER);
+        // creating new scene and stage
+        Scene scene = new Scene(root, 1400, 1000);
+        Stage mapStage = new Stage();
+        mapStage.setScene(scene);
 
-            Scene scene = new Scene(root, 1000, 800);
+        // hide previous window, show the new one
+        welcomeStage.hide();
+        mapStage.show();
 
-            Stage mapStage = new Stage();
+        // center window on screen
+        Rectangle2D primScreenBounds = Screen.getPrimary().getVisualBounds();
+        mapStage.setX((primScreenBounds.getWidth() - mapStage.getWidth()) / 2);
+        mapStage.setY((primScreenBounds.getHeight() - mapStage.getHeight()) / 2);
+    }
 
-            mapStage.setScene(scene);
+    private void addPauseButton(HBox hbox, IEngine engine)
+    {
+        Button button = new Button("\u23F8");
 
-            // hide previous window, show the new one
-            primaryStage.hide();
-            mapStage.show();
+        button.setMaxSize(30,30);
+        button.setMinSize(30,30);
 
-            // center window on screen
-            Rectangle2D primScreenBounds = Screen.getPrimary().getVisualBounds();
-            mapStage.setX((primScreenBounds.getWidth() - mapStage.getWidth()) / 2);
-            mapStage.setY((primScreenBounds.getHeight() - mapStage.getHeight()) / 2);
+        button.setOnAction(e -> {
+            engine.changeEngineState();
 
+            if (Objects.equals(button.getText(), "\u23F8"))
+                button.setText("\u25B6");
+            else
+                button.setText("\u23F8");
         });
+
+        HBox.setMargin(button, new Insets(20));
+
+        hbox.getChildren().add(button);
     }
 
     public void createAndAddAxisLabels(GridPane grid)
     {
-        // y/x label
-        Label label1 = new Label("y\\x");
-        GridPane.setHalignment(label1, HPos.CENTER);
-        grid.add(label1, 0, 0);
+//        // y/x label
+//        Label label1 = new Label("y\\x");
+//        GridPane.setHalignment(label1, HPos.CENTER);
+//        grid.add(label1, 0, 0);
 
         // labeling y axis
         for(int i = 0; i < y_len; i++)
@@ -253,32 +353,14 @@ public class App extends Application{
         }
     }
 
-    public void createAndAddElements(GridPane grid)
-    {
-        // filling map
-        for(int i = 0; i < x_len; i++)
-            for(int j = 0; j < y_len; j++)
-            {
-                // buttons[i][j] refers to position (i + lower_corner.x, j + lower_corner.y) on the map
-                Object obj = unboundedMap.objectAt(new Vector2d(lower_corner.x + i, lower_corner.y + j));
-
-                if (obj != null)
-                {
-                    Labeled node = GuiElementButton.createElement((IMapElement) obj);
-                    GridPane.setHalignment(node, HPos.CENTER);
-                    grid.add(node, i + 1, y_len - j);
-                }
-            }
-    }
-
-    public void setColRowSizes(GridPane grid)
+    private void setColRowSizes(GridPane grid)
     {
         //setting columns' sizes
         for(int i = 0; i < x_len + 1; i++)
         {
             ColumnConstraints col1 = new ColumnConstraints();
-            col1.setPercentWidth(100);
-            col1.setFillWidth(Boolean.TRUE);
+            col1.setMinWidth(CELL_WIDTH);
+            col1.setMaxWidth(CELL_WIDTH);
             grid.getColumnConstraints().add(col1);
         }
 
@@ -286,12 +368,63 @@ public class App extends Application{
         for(int i = 0; i < y_len + 1; i++)
         {
             RowConstraints row1 = new RowConstraints();
-            row1.setPercentHeight(100);
-//            row1.setFillHeight(Boolean.TRUE);
+            row1.setMaxHeight(CELL_HEIGHT);
+            row1.setMinHeight(CELL_HEIGHT);
             grid.getRowConstraints().add(row1);
-
         }
     }
 
+    public void createAndAddElements(GridPane grid, IWorldMap map)
+    {
+        // filling map
+        for(int i = 0; i < x_len; i++)
+            for(int j = 0; j < y_len; j++)
+            {
+                // buttons[i][j] refers to position (i + lower_corner.x, j + lower_corner.y) on the map
+                Vector2d position = new Vector2d(lower_corner.x + i, lower_corner.y + j);
+                Object obj = map.objectAt(position);
 
+                if (obj != null)
+                {
+                    Labeled node = GuiElementButton.createElement((IMapElement) obj, CELL_WIDTH, CELL_HEIGHT, startEnergy);
+
+                    GridPane.setHalignment(node, HPos.CENTER);
+                    grid.add(node, i + 1, y_len - j);
+                }
+                else if (position.follows(jungleLowerCorner) && position.precedes(jungleUpperCorner.subtract(new Vector2d(1, 1))))
+                {
+                    Shape jungleField = new Rectangle(CELL_WIDTH, CELL_HEIGHT);
+                    jungleField.setFill(Color.color(0, 128.0/256.0, 0));
+
+                    GridPane.setHalignment(jungleField, HPos.CENTER);
+                    grid.add(jungleField, i + 1, y_len - j);
+                }
+            }
+    }
+
+    private void addPlots()
+    {
+        // credit to http://tutorials.jenkov.com/javafx/linechart.html
+
+        LinearPlot boundedPlot = new LinearPlot("Bounded Map");
+        LinearPlot unboundedPlot = new LinearPlot("Unbounded Map");
+
+        boundedEngine.setLinearPlot(boundedPlot);
+        unboundedEngine.setLinearPlot(unboundedPlot);
+
+        boundedPlot.addPlotToHBox(boundedHBox);
+        unboundedPlot.addPlotToHBox(unboundedHBox);
+    }
+
+    private void addTrackingBoxes()
+    {
+        this.boundedTrackingBox = new VBox();
+        this.unboundedTrackingBox = new VBox();
+
+        boundedEngine.setTrackingBox(boundedTrackingBox);
+        unboundedEngine.setTrackingBox(unboundedTrackingBox);
+
+        boundedHBox.getChildren().add(boundedTrackingBox);
+        unboundedHBox.getChildren().add(unboundedTrackingBox);
+    }
 }

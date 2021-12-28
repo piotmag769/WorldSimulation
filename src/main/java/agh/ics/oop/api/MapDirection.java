@@ -76,15 +76,15 @@ public enum MapDirection {
     {
         return switch(this)
                 {
-                    case NORTH -> "/jeze/N.jpg";
-                    case EAST -> "/jeze/E.jpg";
-                    case WEST -> "/jeze/W.jpg";
-                    case SOUTH -> "/jeze/S.jpg";
-                    case NORTH_EAST -> "/jeze/NE.jpg";
-                    case SOUTH_EAST -> "/jeze/SE.jpg";
-                    case SOUTH_WEST -> "/jeze/SW.jpg";
-                    case NORTH_WEST -> "/jeze/NW.jpg";
-                    default -> "/grass.jpg";
+                    case NORTH -> "/images/N.jpg";
+                    case EAST -> "/images/E.jpg";
+                    case WEST -> "/images/W.jpg";
+                    case SOUTH -> "/images/S.jpg";
+                    case NORTH_EAST -> "/images/NE.jpg";
+                    case SOUTH_EAST -> "/images/SE.jpg";
+                    case SOUTH_WEST -> "/images/SW.jpg";
+                    case NORTH_WEST -> "/images/NW.jpg";
+                    default -> "/images/grass.jpg";
                 };
     }
 }

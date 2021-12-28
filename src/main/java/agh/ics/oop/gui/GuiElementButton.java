@@ -1,10 +1,11 @@
 package agh.ics.oop.gui;
 
+import agh.ics.oop.api.Animal;
 import agh.ics.oop.api.Grass;
 import agh.ics.oop.api.IMapElement;
 import agh.ics.oop.api.MapDirection;
+import javafx.geometry.HPos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
 import javafx.scene.image.Image;
@@ -29,20 +30,59 @@ public class GuiElementButton {
         put(MapDirection.GRASS, new Image(MapDirection.GRASS.getImagePath()));
     }};
 
-    public static Labeled createElement(IMapElement element)
+    public static Button createElement(IMapElement element, double width, double height, int startEnergy)
     {
         Image image = views_map.get(element.getOrientation());
         ImageView imageView = new ImageView(image);
-        imageView.setFitWidth(50);
-        imageView.setFitHeight(50);
-        Labeled node;
+        imageView.setFitWidth(width/2);
+        imageView.setFitHeight(height/2);
+        imageView.setPreserveRatio(true);
 
-        node = (element instanceof Grass) ? new Label(): new Button();
+        // in case of grass clicking on button has no effect
+        Button button = new Button();
 
-        node.setGraphic(imageView);
-        node.setText(element.getPosition().toString());
-        node.setContentDisplay(ContentDisplay.TOP);
+        setButtonColor(button, startEnergy, element);
 
-        return node;
+        button.setGraphic(imageView);
+
+        button.setMaxSize(width, height);
+        button.setMinSize(width, height);
+        button.setCenterShape(true);
+
+        return button;
+    }
+
+
+    private static void setButtonColor(Button button, int startEnergy, IMapElement element)
+    {
+        String greenComponent;
+
+        if (element instanceof Animal animal)
+        {
+            // energy of animal is defined by green component in its background color
+            // from magenta = #ff00ff (energy >= startEnergy)  to white = #ffffff (energy == 0)
+
+            int energy = animal.getEnergy();
+
+            if (startEnergy == 0)
+                greenComponent = "ff";
+            else {
+                greenComponent = (energy > startEnergy) ? "00" : Integer.toHexString((int) ((1.0 - (double) energy / (double) startEnergy) * 255.0));
+            }
+
+            // to match css format
+            if (greenComponent.length() == 1)
+                greenComponent = "0" + greenComponent;
+        }
+        else {
+            greenComponent = "ff";
+        }
+
+        button.setStyle("-fx-background-color: #ff" + greenComponent + "ff");
+    }
+
+    private static void setButtonOnClick()
+    {
+
     }
 }

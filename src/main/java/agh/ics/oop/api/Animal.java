@@ -7,6 +7,8 @@ public class Animal extends WorldMapElement {
     private final List<IPositionChangeObserver> observers= new ArrayList<>();
     private int energy;
     private final int[] genotype;
+    private int lifetime = 0;
+    private int numberOfChildren = 0;
 
     // constructor related to first animals
     public Animal(IWorldMap map, Vector2d position, int StartEnergy)
@@ -86,13 +88,14 @@ public class Animal extends WorldMapElement {
         this.genotype = res;
     }
 
-    public boolean isAt(Vector2d position)
-    {
-        return position.equals(this.position);
-    }
+//    public boolean isAt(Vector2d position)
+//    {
+//        return position.equals(this.position);
+//    }
 
     public void move(MoveDirection direction)
     {
+        lifetime++;
         switch (direction) {
             case FORWARD -> {
                 Vector2d newPosition = this.position.add(this.orientation.toUnitVector());
@@ -146,10 +149,10 @@ public class Animal extends WorldMapElement {
         this.observers.add(observer);
     }
 
-    public void removeObserver(IPositionChangeObserver observer)
-    {
-        this.observers.remove(observer);
-    }
+//    public void removeObserver(IPositionChangeObserver observer)
+//    {
+//        this.observers.remove(observer);
+//    }
 
     private void positionChanged(Vector2d oldPosition, Vector2d newPosition)
     {
@@ -175,5 +178,24 @@ public class Animal extends WorldMapElement {
     public void gainEnergy(int energyGain)
     {
         this.energy += energyGain;
+    }
+
+    public int getLifetime()
+    {
+        return lifetime;
+    }
+
+    public int getNumberOfChildren() {
+        return numberOfChildren;
+    }
+
+    public void increaseChildrenNumber()
+    {
+        numberOfChildren++;
+    }
+
+    public int[] getGenotype()
+    {
+        return genotype;
     }
 }

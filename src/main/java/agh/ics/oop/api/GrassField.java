@@ -1,5 +1,7 @@
 package agh.ics.oop.api;
 import java.util.*;
+import java.util.stream.IntStream;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -21,6 +23,9 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     private final int energyLoss;
     private final int plantEnergy;
     private final int startEnergy;
+    private int numberOfPlants = 0;
+    private int animalsPassed = 0;
+    private int summaryLifetime = 0;
 
 
     public GrassField(int width, int height, double jungleRatio, int energyLoss, int plantEnergy, int startEnergy, boolean isBounded)
@@ -68,12 +73,20 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     @Override
     public Object objectAt(Vector2d position)
     {
-        Collection<IMapElement> elementList = this.elementMultimap.get(position);
+        Object[] elementList = this.elementMultimap.get(position).toArray();
 
-        if (!elementList.isEmpty())
-            return elementList.toArray()[0];
-
-        return null;
+        if (elementList.length == 0)
+            return null;
+        else if (elementList.length == 1)
+            return elementList[0];
+        else
+        {
+            Animal res = (Animal) elementList[0];
+            // to return animal with maximum energy
+            for(Object obj: elementList)
+                res = (((Animal) obj).getEnergy() > res.getEnergy()) ? (Animal) obj : res;
+            return res;
+        }
     }
 
     @Override
@@ -86,8 +99,6 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     @Override
     public void letDayPass()
     {
-        this.removeDeadOnes();
-
         this.makeAnimalsMove();
 
         this.eatGrass();
@@ -95,6 +106,11 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         this.copulate();
 
         this.makeGrassGrow();
+
+        // they lose energy at the end of the day
+        this.makeAnimalsLoseEnergy();
+
+        this.removeDeadOnes();
     }
 
     private void removeDeadOnes()
@@ -107,9 +123,11 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             Object[] animalsAtPosition = elementMultimap.get((Vector2d) key).toArray();
 
             for(Object element: animalsAtPosition)
-                if (element instanceof Animal && ((Animal) element).getEnergy() == 0)
+                if (element instanceof Animal && ((Animal) element).getEnergy() <= 0)
                 {
                     elementMultimap.remove((Vector2d) key, element);
+                    summaryLifetime += ((Animal) element).getLifetime();
+                    animalsPassed++;
                     animalList.remove(element);
                 }
         }
@@ -119,8 +137,6 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     {
         for(Animal animal: animalList)
         {
-            animal.loseEnergy(energyLoss);
-
             int move = animal.chooseGene();
 
             if (move == 0)
@@ -153,12 +169,14 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
                     {
                         isGrassOnTheField = true;
                         elementMultimap.remove(key, element);
+                        numberOfPlants--;
                         break;
                     }
 
                 // make the animal(s) eat grass
                 if (isGrassOnTheField)
                 {
+
                     List<Animal> animalsGettingFood = new ArrayList<>();
                     maxEnergy = 0;
 
@@ -202,11 +220,14 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
                 }
 
                 // creating new animal if conditions for copulation are met
-                if (animalsCopulating[0].getEnergy() > startEnergy/2 && animalsCopulating[0].getEnergy() > startEnergy/2)
+                if ((double) animalsCopulating[0].getEnergy() > (double) startEnergy/2.0 && (double) animalsCopulating[0].getEnergy() > (double) startEnergy/2.0)
                 {
                     Animal animal = new Animal(this, animalsCopulating[0], animalsCopulating[1]);
                     elementMultimap.put(key, animal);
                     animalList.add(animal);
+
+                    for(int i = 0; i < 2; i++)
+                        animalsCopulating[i].increaseChildrenNumber();
                 }
             }
     }
@@ -225,8 +246,15 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             {
                 position = freeFields.get(random.nextInt(freeFields.size()));
                 this.elementMultimap.put(position, new Grass(position));
+                this.numberOfPlants++;
             }
         }
+    }
+
+    private void makeAnimalsLoseEnergy()
+    {
+        for(Animal animal: animalList)
+            animal.loseEnergy(energyLoss);
     }
 
     // as jungleUpperRight is exclusive
@@ -271,15 +299,19 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     }
 
     @Override
-    public int getStartEnergy()
-    {
-        return this.startEnergy;
+    public Vector2d getJungleUpperCorner() {
+        return this.jungleUpperRight;
     }
 
     @Override
-    public int countAnimals()
+    public Vector2d getJungleLowerCorner() {
+        return this.jungleLowerLeft;
+    }
+
+    @Override
+    public int getStartEnergy()
     {
-        return animalList.size();
+        return this.startEnergy;
     }
 
     @Override
@@ -308,5 +340,88 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             place(new Animal(animalList.get(i), position, startEnergy));
             freeArea.remove(position);
         }
+    }
+
+    @Override
+    public int getAnimalsPassed()
+    {
+        return animalList.size();
+    }
+
+    @Override
+    public int getNumberOfPlants() {
+        return numberOfPlants;
+    }
+
+    @Override
+    public double calculateAverageEnergy() {
+        if (animalList.size() == 0)
+            return 0;
+
+        double sum = 0;
+        double size = animalList.size();
+        for(Animal animal: animalList)
+            sum += animal.getEnergy();
+
+        return sum/size;
+    }
+
+    // if not specified (no one died) - set to 0
+    @Override
+    public double calculateAverageLifetime() {
+        return (animalsPassed == 0) ? 0 : (double) summaryLifetime/ (double) animalsPassed;
+    }
+
+    @Override
+    public double calculateAverageChildrenAmount() {
+        if (animalList.size() == 0)
+            return 0;
+
+        int sum = 0;
+        for(Animal animal: animalList)
+            sum += animal.getNumberOfChildren();
+
+        return (double) sum / (double) animalList.size();
+    }
+
+    @Override
+    public int[] getDominantGenotype()
+    {
+        int[] res = new int[32];
+        // if no animals on the map, return invalid genotype (filled with -1)
+        if (animalList.size() == 0)
+        {
+            Arrays.fill(res, -1);
+            return res;
+        }
+
+        Map<int[], Integer> hashMap = new HashMap<>();
+
+        for(Animal animal: animalList)
+        {
+            int[] genotype = animal.getGenotype();
+
+            if (!hashMap.containsKey(genotype))
+                hashMap.put(genotype, 1);
+            else
+            {
+                Integer count = hashMap.get(genotype);
+                count++;
+                hashMap.put(genotype, count);
+            }
+        }
+
+        Integer max = 0;
+        for(int[] key: hashMap.keySet())
+        {
+            Integer temp = hashMap.get(key);
+            if (temp > max)
+            {
+                max = temp;
+                res = key;
+            }
+        }
+
+        return res;
     }
 }

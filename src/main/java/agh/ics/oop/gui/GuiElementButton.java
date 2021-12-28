@@ -4,8 +4,6 @@ import agh.ics.oop.api.Animal;
 import agh.ics.oop.api.IEngine;
 import agh.ics.oop.api.IMapElement;
 import agh.ics.oop.api.MapDirection;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -14,7 +12,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
+
 
 
 import java.util.Arrays;
@@ -91,18 +89,19 @@ public class GuiElementButton {
 
     private static void setButtonOnAction(Button button, Animal animal, IEngine engine)
     {
+        // to track or display genotype
         button.setOnAction(event -> {
             // only can do that if simulation is stopped
             if (engine.isStopped())
             {
-                Button button1 = new Button("Show genotype");
-                Button button2 = new Button("Track");
+                Button genotypeButton = new Button("Show genotype");
+                Button trackButton = new Button("Track");
 
-                HBox.setMargin(button1, new Insets(20));
+                HBox.setMargin(genotypeButton, new Insets(20));
 
-                HBox.setMargin(button2, new Insets(20));
+                HBox.setMargin(trackButton, new Insets(20));
 
-                HBox hBox = new HBox(button1, button2);
+                HBox hBox = new HBox(genotypeButton, trackButton);
 
                 Scene scene = new Scene(hBox, 230, 100);
 
@@ -110,14 +109,14 @@ public class GuiElementButton {
                 stage.setScene(scene);
                 stage.show();
 
-                button1.setOnAction(e -> {
+                genotypeButton.setOnAction(e -> {
                     stage.hide();
                     Stage genotypeStage = new Stage();
                     genotypeStage.setScene(new Scene(new Label(Arrays.toString(animal.getGenotype())), 400, 100));
                     genotypeStage.show();
                 });
 
-                button2.setOnAction(e -> {
+                trackButton.setOnAction(e -> {
                     engine.startTrackingAnimal(animal);
                     stage.hide();
                 });

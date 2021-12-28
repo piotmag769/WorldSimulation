@@ -17,7 +17,6 @@ import javafx.scene.text.Text;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-import java.util.List;
 import java.util.Objects;
 
 public class App extends Application{
@@ -309,7 +308,8 @@ public class App extends Application{
     {
         Button button = new Button("genotype");
         button.setOnAction(event -> {
-            engine.highlightDominantGenotypeAnimals();
+            if (engine.isStopped())
+                engine.highlightDominantGenotypeAnimals();
         });
 
         hbox.getChildren().add(button);
@@ -408,8 +408,8 @@ public class App extends Application{
         Text boundedText = new Text();
         Text unboundedText = new Text();
 
-        boundedEngine.setText(boundedText);
-        unboundedEngine.setText(unboundedText);
+        boundedEngine.setTextInfo(boundedText);
+        unboundedEngine.setTextInfo(unboundedText);
 
         boundedHBox.getChildren().add(boundedText);
         unboundedHBox.getChildren().add(unboundedText);

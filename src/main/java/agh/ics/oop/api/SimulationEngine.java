@@ -22,19 +22,22 @@ public class SimulationEngine implements Runnable, IEngine{
 
     private final App app;
     private GridPane gridPane;
-    private Text text;
+    private Text textInfo;
     private LinearPlot linearPlot;
 
-    private FileManager fileManager;
-    private List<Button> animalButtonsList = new ArrayList<>();
-    private List<Animal> animalsAssignedToButtons = new ArrayList<>();
+    private final FileManager fileManager;
+    private final List<Button> animalButtonsList = new ArrayList<>();
+    private final List<Animal> animalsAssignedToButtons = new ArrayList<>();
 
     private boolean isStopped = false;
     private final boolean isMagical;
 
-    private final int MOVE_DELAY = 50;
+    private final int MOVE_DELAY = 1000;
     private int dayCount = 0;
     private int magicalEventsHappened = 0;
+
+    // for tracked animal
+    private boolean isAnimalTracked = false;
 
     public SimulationEngine(IWorldMap map, int animalsAtStart, boolean isMagical, App app, String filename)
     {
@@ -113,7 +116,11 @@ public class SimulationEngine implements Runnable, IEngine{
                 map.calculateAverageChildrenAmount()
         };
 
-        Platform.runLater(() -> updateGui(statistic));
+        Platform.runLater(() -> {
+            updateGui(statistic);
+            updateTrackedInfo();
+        });
+
         fileManager.writeDayToFile(statistic);
     }
 
@@ -134,8 +141,8 @@ public class SimulationEngine implements Runnable, IEngine{
     }
 
     @Override
-    public void setText(Text text) {
-        this.text = text;
+    public void setTextInfo(Text textInfo) {
+        this.textInfo = textInfo;
     }
 
     @Override
@@ -176,10 +183,18 @@ public class SimulationEngine implements Runnable, IEngine{
         {
             char curr = string.charAt(i);
             if (curr != ' ' && curr != ',')
-                res = res.append(curr);
+                res.append(curr);
         }
 
-        text.setText("Dominant genotype:\n" + res);
+        textInfo.setText("Dominant genotype:\n" + res);
+    }
+
+    private void updateTrackedInfo()
+    {
+        if (!isAnimalTracked)
+            return;
+
+        textInfo.setText(textInfo.getText() + map.getTrackedInfo());
     }
 
     private void updateGui(Number[] statistic)
@@ -209,6 +224,8 @@ public class SimulationEngine implements Runnable, IEngine{
 
     @Override
     public void startTrackingAnimal(Animal animal) {
-
+        animal.setTrackedAncestor(animal);
+        isAnimalTracked = true;
+        map.resetTrackedValues(animal);
     }
 }

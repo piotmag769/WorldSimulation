@@ -11,23 +11,28 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     private final Multimap<Vector2d, IMapElement> elementMultimap = ArrayListMultimap.create();
     // list for making animals move
     private final List<Animal> animalList = new ArrayList<>();
-    private final MapVisualizer MV = new MapVisualizer(this);
     private final Vector2d upperCorner; // inclusive
     private final Vector2d lowerCorner; // inclusive
     // deriving from jg ratio
     private final Vector2d jungleLowerLeft; // inclusive
     private final Vector2d jungleUpperRight; // exclusive
 
-    private Animal trackedAnimal;
-
-    // can be public because it's final anyways
     private final boolean isBounded;
     private final int energyLoss;
     private final int plantEnergy;
     private final int startEnergy;
+
+    // for statistics
+    private int dayCount = 0;
     private int numberOfPlants = 0;
     private int animalsPassed = 0;
     private int summaryLifetime = 0;
+
+    // for tracking
+    private Animal trackedAnimal = null;
+    private int childrenAmount = 0;
+    private int descendantsAmount = 0;
+    private int deathDay = 0;
 
 
     public GrassField(int width, int height, double jungleRatio, int energyLoss, int plantEnergy, int startEnergy, boolean isBounded)
@@ -83,6 +88,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             return elementList[0];
         else
         {
+            // TODO bad shit happens
             Animal res = (Animal) elementList[0];
             // to return animal with maximum energy
             for(Object obj: elementList)
@@ -101,6 +107,8 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     @Override
     public void letDayPass()
     {
+        dayCount++;
+
         this.makeAnimalsMove();
 
         this.eatGrass();
@@ -127,6 +135,8 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             for(Object element: animalsAtPosition)
                 if (element instanceof Animal && ((Animal) element).getEnergy() <= 0)
                 {
+                    if (element == trackedAnimal)
+                        deathDay = dayCount;
                     elementMultimap.remove((Vector2d) key, element);
                     summaryLifetime += ((Animal) element).getLifetime();
                     animalsPassed++;
@@ -225,6 +235,15 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
                 if ((double) animalsCopulating[0].getEnergy() > (double) startEnergy/2.0 && (double) animalsCopulating[0].getEnergy() > (double) startEnergy/2.0)
                 {
                     Animal animal = new Animal(this, animalsCopulating[0], animalsCopulating[1]);
+                    if (trackedAnimal != null && animalsCopulating[0] == trackedAnimal || animalsCopulating[1] == trackedAnimal)
+                    {
+                        animal.setTrackedAncestor(trackedAnimal);
+                        childrenAmount++;
+                        descendantsAmount++;
+                    }
+                    else if (trackedAnimal != null && animalsCopulating[0].getTrackedAncestor() == trackedAnimal || animalsCopulating[1].getTrackedAncestor() == trackedAnimal)
+                        descendantsAmount++;
+
                     elementMultimap.put(key, animal);
                     animalList.add(animal);
 
@@ -280,12 +299,6 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             }
 
         return result;
-    }
-
-    @Override
-    public String toString()
-    {
-        return this.MV.draw(this.lowerCorner, this.upperCorner);
     }
 
     @Override
@@ -393,7 +406,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         // if no animals on the map, return invalid genotype (filled with -1)
         if (animalList.size() == 0)
         {
-            Arrays.fill(res, -1);
+            Arrays.fill(res, 8);
             return res;
         }
 
@@ -413,10 +426,10 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             }
         }
 
-        Integer max = 0;
+        int max = 0;
         for(int[] key: hashMap.keySet())
         {
-            Integer temp = hashMap.get(key);
+            int temp = hashMap.get(key);
             if (temp > max)
             {
                 max = temp;
@@ -431,5 +444,20 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
     public void setTrackedAnimal(Animal animal)
     {
         this.trackedAnimal = animal;
+    }
+
+    @Override
+    public String getTrackedInfo()
+    {
+        return "\n\nChildren number: " + childrenAmount + "\nDescendant number: " + descendantsAmount + "\nDay of death: " + ((deathDay == 0) ? "" : deathDay);
+    }
+
+    @Override
+    public void resetTrackedValues(Animal animal)
+    {
+        trackedAnimal = animal;
+        childrenAmount = 0;
+        descendantsAmount = 0;
+        deathDay = 0;
     }
 }

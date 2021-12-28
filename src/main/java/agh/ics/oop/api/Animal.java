@@ -9,7 +9,7 @@ public class Animal extends WorldMapElement {
     private final int[] genotype;
     private int lifetime = 0;
     private int numberOfChildren = 0;
-    private Animal trackedAncestor;
+    private Animal trackedAncestor = null;
 
     // constructor related to first animals
     public Animal(IWorldMap map, Vector2d position, int StartEnergy)
@@ -89,11 +89,6 @@ public class Animal extends WorldMapElement {
         this.genotype = res;
     }
 
-//    public boolean isAt(Vector2d position)
-//    {
-//        return position.equals(this.position);
-//    }
-
     public void move(MoveDirection direction)
     {
         lifetime++;
@@ -150,10 +145,6 @@ public class Animal extends WorldMapElement {
         this.observers.add(observer);
     }
 
-//    public void removeObserver(IPositionChangeObserver observer)
-//    {
-//        this.observers.remove(observer);
-//    }
 
     private void positionChanged(Vector2d oldPosition, Vector2d newPosition)
     {
@@ -202,5 +193,9 @@ public class Animal extends WorldMapElement {
 
     public void setTrackedAncestor(Animal trackedAncestor) {
         this.trackedAncestor = trackedAncestor;
+    }
+
+    public Animal getTrackedAncestor() {
+        return trackedAncestor;
     }
 }

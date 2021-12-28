@@ -43,5 +43,9 @@ public interface IWorldMap {
 
     void setTrackedAnimal(Animal animal);
 
+    String getTrackedInfo();
+
+    void resetTrackedValues(Animal animal);
+
     List<Vector2d> getFreeAreaFrom(boolean fromAllMap, boolean isJungle);
 }

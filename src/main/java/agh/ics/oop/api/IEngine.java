@@ -3,7 +3,6 @@ package agh.ics.oop.api;
 import agh.ics.oop.gui.LinearPlot;
 import javafx.scene.control.Button;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
 public interface IEngine {
@@ -16,7 +15,7 @@ public interface IEngine {
 
     void changeEngineState();
 
-    void setText(Text text);
+    void setTextInfo(Text textInfo);
 
     void addAnimalButton(Button button, Animal animal);
 

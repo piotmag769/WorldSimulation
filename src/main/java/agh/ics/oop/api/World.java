@@ -1,6 +1,5 @@
 package agh.ics.oop.api;
 
-
 import agh.ics.oop.gui.App;
 import javafx.application.Application;
 

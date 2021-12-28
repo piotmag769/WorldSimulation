@@ -88,12 +88,18 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             return elementList[0];
         else
         {
-            // TODO bad shit happens
+            if (elementList[0] instanceof Grass)
+                return elementList[0];
+
             Animal res = (Animal) elementList[0];
             // to return animal with maximum energy
             for(Object obj: elementList)
-                res = (((Animal) obj).getEnergy() > res.getEnergy()) ? (Animal) obj : res;
-            return res;
+                if(obj instanceof Grass)
+                    return obj;
+                else
+                    res = (((Animal) obj).getEnergy() > res.getEnergy()) ? (Animal) obj : res;
+
+                return res;
         }
     }
 

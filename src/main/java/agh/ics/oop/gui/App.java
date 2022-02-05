@@ -429,14 +429,22 @@ public class App extends Application{
         }
 
         Thread boundedThread = new Thread(() -> {
-            while (true) {
-                boundedEngine.run();
+            try {
+                while (true) {
+                    boundedEngine.run();
+                }
+            } catch(IllegalStateException e) {
+                System.out.println(e.getMessage());
             }
         });
 
         Thread unboundedThread = new Thread(() -> {
-            while (true) {
-                unboundedEngine.run();
+            try {
+                while (true) {
+                    unboundedEngine.run();
+                }
+            } catch(IllegalStateException e) {
+                System.out.println(e.getMessage());
             }
         });
 

@@ -32,7 +32,7 @@ public class SimulationEngine implements Runnable, IEngine{
     private boolean isStopped = false;
     private final boolean isMagical;
 
-    private final int MOVE_DELAY = 1000;
+    private final int MOVE_DELAY = 100;
     private int dayCount = 0;
     private int magicalEventsHappened = 0;
 

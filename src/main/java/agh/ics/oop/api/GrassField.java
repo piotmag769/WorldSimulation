@@ -1,7 +1,6 @@
 package agh.ics.oop.api;
-import java.util.*;
-import java.util.stream.IntStream;
 
+import java.util.*;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
@@ -88,15 +87,15 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             return elementList[0];
         else
         {
-            if (elementList[0] instanceof Grass)
-                return elementList[0];
+//            if (elementList[0] instanceof Grass)
+//                return elementList[0];
 
             Animal res = (Animal) elementList[0];
             // to return animal with maximum energy
             for(Object obj: elementList)
-                if(obj instanceof Grass)
-                    return obj;
-                else
+//                if(obj instanceof Grass)
+//                    return obj;
+//                else
                     res = (((Animal) obj).getEnergy() > res.getEnergy()) ? (Animal) obj : res;
 
                 return res;
@@ -300,6 +299,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             for(int j = 0; j < upperCorner.y + 1; j++)
             {
                 Vector2d position = new Vector2d(i, j);
+                // XDDDDDDDDDDDDD
                 if ((fromAllMap || isJungle == isInJungle(position)) && !isOccupied(position))
                     result.add(position);
             }

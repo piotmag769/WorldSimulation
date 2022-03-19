@@ -1,6 +1,13 @@
 # World Simulation
 This is a project concerning simple evolution simulation.
 
+## Stages of the day
+
+- 
+- 
+- 
+- 
+
 ## Video
 To see the video of the program running click on the image below.
 

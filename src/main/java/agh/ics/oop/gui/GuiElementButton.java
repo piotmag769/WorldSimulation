@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GuiElementButton {
-    private static final Map<MapDirection, Image> views_map = new HashMap<>() {{
+    private static final Map<MapDirection, Image> viewsMap = new HashMap<>() {{
         put(MapDirection.NORTH, new Image(MapDirection.NORTH.getImagePath()));
         put(MapDirection.NORTH_EAST, new Image(MapDirection.NORTH_EAST.getImagePath()));
         put(MapDirection.EAST, new Image(MapDirection.EAST.getImagePath()));
@@ -36,7 +36,7 @@ public class GuiElementButton {
 
     public static Button createElement(IMapElement element, double width, double height, int startEnergy, IEngine engine)
     {
-        Image image = views_map.get(element.getOrientation());
+        Image image = viewsMap.get(element.getOrientation());
         ImageView imageView = new ImageView(image);
         imageView.setFitWidth(width/2);
         imageView.setFitHeight(height/2);

@@ -93,9 +93,9 @@ public class App extends Application{
         int[][] numericParameters = {
                 {5, 25, 15, 5}, // width
                 {5, 25, 15, 5}, // height
-                {0, 100, 71, 10}, // jungleRatio
+                {0, 100, 70, 10}, // jungleRatio
                 {0, 100, 100, 10}, // startEnergy
-                {0, 100, 3, 10}, // energyLoss
+                {0, 100, 4, 10}, // energyLoss
                 {0, 100, 100, 10}, // plantEnergy
                 {10, 100, 30, 10} // animalsAtStart
         };

@@ -2,11 +2,14 @@
 This is a project concerning simple evolution simulation.
 
 ## Stages of the day
+Each day in our world consist of the following stages:
 
-- 
-- 
-- 
-- 
+- animals moving
+- animals eating grass
+- animals copulating
+- grass growing
+- animals losing energy
+- removing animals with no energy from the map
 
 ## Video
 To see the video of the program running click on the image below.
